@@ -6,7 +6,7 @@ The sources of Checkmk can be found here: https://github.com/tribe29/checkmk
 first, thanks to [chriss404](https://github.com/chrisss404/check-mk-arm) :+1:, we only build somes packages with the chriss404 scripts.
 We use his tool to build some packages not available:
 
-- check-mk for Raspberry buster 32 bits (from 2.0.0p18)
+- check-mk for Raspberry buster 32 bits (from 2.0.0p17)
 - check-mk for Raspberry bulleyes 64 bits (from 2.0.0p21)
 
 On the release page you can find (in a few days) deb packages targeting the following systems:
