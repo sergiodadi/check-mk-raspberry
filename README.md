@@ -13,5 +13,5 @@ On the release page you can find (in a few days) deb packages targeting the foll
 - Raspberry Pi OS buster 32 bits
 - Raspberry Pi OS bulleyes 64 bits
 
-I have tested the package on a **Raspberry PI 4** (with 4 Gb)
+I have tested the buster  *2.0.0p21* package on a **Raspberry PI 4 4 Gb** : ARMv7 Processor rev 3 (v7l)
 
