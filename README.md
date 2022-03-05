@@ -1,4 +1,4 @@
-# check-mk-arm
+# check-mk-raspberry
 Checkmk for Raspberry Pi (buster 32 bits and bulleyes 64 bits)
 
 The sources of Checkmk can be found here: https://github.com/tribe29/checkmk
