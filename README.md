@@ -6,3 +6,8 @@ We use his tool to build :
 
 - check-mk for Raspberry buster 32 bits 
 - check-mk for Raspberry bulleyes 64 bits
+
+On the release page you can find deb packages targeting the following systems:
+- Raspberry Pi OS buster 32 bits
+- Raspberry Pi OS bulleyes 64 bits
+
