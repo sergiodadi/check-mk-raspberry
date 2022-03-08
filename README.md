@@ -12,5 +12,5 @@ We use his tool to build some packages not available:
 On the release page you can find deb packages targeting the following systems:
 - Raspberry Pi OS buster 32 bits (**armhf**)
 
-I have tested the buster  *2.0.0p21* package on a **Raspberry PI 4 - 4 Gb** : ARMv7 Processor rev 3 (v7l)
+I have tested the buster  *2.0.0p21* package on a **Raspberry PI 4 - 4 Gb** : ARMv7 Processor rev 3 (v7l) , upgrade from *2.0.0p17* to *2.0.0p21* is OK 
 
