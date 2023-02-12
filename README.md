@@ -1,6 +1,8 @@
 # check-mk-raspberry
 Checkmk for Raspberry Pi (buster 32 bits)
 
+This directory is no longer updated for 32-bit versions
+
 The sources of Checkmk can be found here: https://github.com/tribe29/checkmk
 
 first, thanks to [chriss404](https://github.com/chrisss404/check-mk-arm) :+1:, we only build somes packages with the chriss404 scripts.
