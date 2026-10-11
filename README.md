@@ -14,8 +14,7 @@ Checkmk does not publish ARM packages. This repository provides `.deb` packages 
 
 Download them from the [Releases](https://github.com/sergiodadi/check-mk-raspberry/releases) page.
 
-All packages are built and tested on a **Raspberry Pi 5 Model B (8 GB)**. 2.5.0p14 and 2.3.0p50 run as production sites on Debian 12 bookworm
-since October 2026; the other packages are tested by installation in a Debian 12 bookworm arm64 environment.
+All packages are tested on a **Raspberry Pi 5 Model B (8 GB)** running Debian 12 bookworm.
 Several versions can be installed side by side (OMD keeps one directory per version).
 
 ## Installation
