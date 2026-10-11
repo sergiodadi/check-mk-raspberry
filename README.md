@@ -8,7 +8,7 @@ Checkmk does not publish ARM packages. This repository provides `.deb` packages 
 
 | Checkmk | Edition | Target | Package |
 |---|---|---|---|
-| **2.5.0p14** | Community | Debian 12 / Raspberry Pi OS **bookworm**, **arm64** | `check-mk-community-2.5.0p14_0.bookworm_arm64.deb` |
+| **2.5.0p15** | Community | Debian 12 / Raspberry Pi OS **bookworm**, **arm64** | `check-mk-community-2.5.0p15_0.bookworm_arm64.deb` |
 | **2.4.0p37** | Raw | Debian 12 / Raspberry Pi OS **bookworm**, **arm64** | `check-mk-raw-2.4.0p37_0.bookworm_arm64.deb` |
 | **2.3.0p50** | Raw | Debian 12 / Raspberry Pi OS **bookworm**, **arm64** | `check-mk-raw-2.3.0p50_0.bookworm_arm64.deb` |
 
@@ -39,6 +39,7 @@ To update an existing site, install the new package, then run `omd update` as de
 
 | Date | Version | Target |
 |---|---|---|
+| 2026-10 | [2.5.0p15](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p15) (Community) | bookworm arm64 |
 | 2026-10 | [2.4.0p37](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.4.0p37) (Raw) | bookworm arm64 |
 | 2026-10 | [2.5.0p14](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p14) (Community) | bookworm arm64 |
 | 2026-10 | [2.3.0p50](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.3.0p50) (Raw) | bookworm arm64 |
