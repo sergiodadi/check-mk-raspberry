@@ -1,17 +1,37 @@
 # check-mk-raspberry
-Checkmk for Raspberry Pi (buster 32 bits)
 
-***** This directory is no longer updated for 32-bit versions *****
+Checkmk Community packages for **Raspberry Pi 64-bit (arm64)**, built from the official Checkmk sources.
 
-The sources of Checkmk can be found here: https://github.com/tribe29/checkmk
+Checkmk does not publish ARM packages. This repository provides `.deb` packages so that a Checkmk site can run on a Raspberry Pi.
 
-first, thanks to [chriss404](https://github.com/chrisss404/check-mk-arm) :+1:, we only build somes packages with the chriss404 scripts.
-We use his tool to build some packages not available:
+## Current package
 
-- check-mk for Raspberry buster 32 bits **armhf** (from 2.0.0p17) 
+| Checkmk | Target | Package |
+|---|---|---|
+| **2.5.0p14** Community | Debian 12 / Raspberry Pi OS **bookworm**, **arm64** (64-bit) | `check-mk-community-2.5.0p14_0.bookworm_arm64.deb` |
 
-On the release page you can find deb packages targeting the following systems:
-- Raspberry Pi OS buster 32 bits (**armhf**)
+Download it from the [Releases](https://github.com/sergiodadi/check-mk-raspberry/releases) page.
 
-I have tested the buster  *2.0.0p21* package on a **Raspberry PI 4 - 4 Gb** : ARMv7 Processor rev 3 (v7l) , upgrade from *2.0.0p17* to *2.0.0p21* is OK 
+Tested on a **Raspberry Pi 5 Model B (8 GB)** running Debian 12 bookworm, as a production remote site since October 2026.
 
+## Installation
+
+```
+sha256sum check-mk-community-2.5.0p14_0.bookworm_arm64.deb   # compare with SHA256SUMS of the release
+sudo apt install ./check-mk-community-2.5.0p14_0.bookworm_arm64.deb
+sudo omd create mysite
+sudo omd start mysite
+```
+
+To update an existing site, install the new package, then run `omd update` as described in the
+[official documentation](https://docs.checkmk.com/latest/en/update.html).
+
+## Sources
+
+- Official Checkmk sources: https://github.com/Checkmk/checkmk
+- Checkmk is licensed under the GNU GPL v2.
+
+## Older releases
+
+The 2.0.0p17 to 2.0.0p27 releases target Raspberry Pi OS **buster 32-bit (armhf)**. They are kept for reference and are no longer updated.
+Thanks to [chrisss404](https://github.com/chrisss404/check-mk-arm) for the scripts used to build them.
