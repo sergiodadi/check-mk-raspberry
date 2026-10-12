@@ -45,3 +45,7 @@ To update an existing site, install the new package, then run `omd update` as de
 | 2022-03 to 2022-07 | [2.0.0p17](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.0.0p17) to [2.0.0p27](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.0.0p27) (Raw) | buster armhf (32-bit), no longer updated |
 
 The 2.0.0 releases were built with the scripts of [chrisss404](https://github.com/chrisss404/check-mk-arm); thanks to him.
+
+## Credits
+
+These packages were built, tested and published with the help of **Claude**, the AI assistant by [Anthropic](https://www.anthropic.com/).
