@@ -25,7 +25,7 @@ GitHub marks only one release as *Latest*; use this table to find the latest pac
 
 Download them from the [Releases](https://github.com/sergiodadi/check-mk-raspberry/releases) page.
 
-All packages are tested on a **Raspberry Pi 5 Model B (8 GB)** running Debian 12 bookworm (Debian 13 trixie for the trixie package; the Ubuntu 24.04 noble package in a clean Ubuntu 24.04 system on the same Pi).
+All packages are tested on a **Raspberry Pi 5 Model B (8 GB)** or a **Raspberry Pi 4** running Debian 12 bookworm (Debian 13 trixie for the trixie package; the Ubuntu 24.04 noble package in a clean Ubuntu 24.04 system on the same Pi).
 Several versions can be installed side by side (OMD keeps one directory per version).
 
 ## Installation
