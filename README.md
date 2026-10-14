@@ -9,12 +9,13 @@ Checkmk does not publish ARM packages. This repository provides `.deb` packages 
 | Checkmk | Edition | Target | Package |
 |---|---|---|---|
 | **2.5.0p15** | Community | Debian 12 / Raspberry Pi OS **bookworm**, **arm64** | `check-mk-community-2.5.0p15_0.bookworm_arm64.deb` |
+| **2.5.0p15** | Community | Debian 13 / Raspberry Pi OS **trixie**, **arm64** | `check-mk-community-2.5.0p15_0.trixie_arm64.deb` |
 | **2.4.0p37** | Raw | Debian 12 / Raspberry Pi OS **bookworm**, **arm64** | `check-mk-raw-2.4.0p37_0.bookworm_arm64.deb` |
 | **2.3.0p50** | Raw | Debian 12 / Raspberry Pi OS **bookworm**, **arm64** | `check-mk-raw-2.3.0p50_0.bookworm_arm64.deb` |
 
 Download them from the [Releases](https://github.com/sergiodadi/check-mk-raspberry/releases) page.
 
-All packages are tested on a **Raspberry Pi 5 Model B (8 GB)** running Debian 12 bookworm.
+All packages are tested on a **Raspberry Pi 5 Model B (8 GB)** running Debian 12 bookworm (or Debian 13 trixie for the trixie package).
 Several versions can be installed side by side (OMD keeps one directory per version).
 
 ## Installation
@@ -29,6 +30,8 @@ sudo omd start mysite
 To update an existing site, install the new package, then run `omd update` as described in the
 [official documentation](https://docs.checkmk.com/latest/en/update.html).
 
+On Debian 13 trixie, install with `apt install ./<package>.deb php8.4-cgi` (see the release notes).
+
 ## Sources
 
 - Official Checkmk sources: https://github.com/Checkmk/checkmk
@@ -38,6 +41,7 @@ To update an existing site, install the new package, then run `omd update` as de
 
 | Date | Version | Target |
 |---|---|---|
+| 2026-10 | [2.5.0p15-trixie](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p15-trixie) (Community) | trixie arm64 |
 | 2026-10 | [2.5.0p15](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p15) (Community) | bookworm arm64 |
 | 2026-10 | [2.4.0p37](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.4.0p37) (Raw) | bookworm arm64 |
 | 2026-10 | [2.5.0p14](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p14) (Community) | bookworm arm64 |
