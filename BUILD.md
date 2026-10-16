@@ -143,6 +143,11 @@ in Pillow, and a few Nagios plug-ins (`check_dig`, `check_dns`, `check_by_ssh`, 
 An unneeded directory `var/cache/bazel-cmk/…` (a few build files of rrdtool) is also included by mistake; it is harmless. Monitoring, the web interface, the agents and
 distributed monitoring work normally.
 
+**Fix in progress**: these components are missing because the build system created by the script lacks some
+development packages that Checkmk installs on its own build machines (for example `dnsutils` for `check_dig` and
+`check_dns`, `openssh-client` for `check_by_ssh`, `default-libmysqlclient-dev` for `check_mysql`). We are adding them
+to the script and testing a new build. Updated packages and an updated script will be published here in a few days.
+
 ## 8. Other versions
 
 The patch is made for **2.5.0p15**. It may also apply to a later 2.5.0 patch release (this has not been tested):
