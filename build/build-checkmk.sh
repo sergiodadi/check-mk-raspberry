@@ -44,7 +44,8 @@ esac
 [ -n "$V" ] || { echo "usage: $0 <version> <distribution> [work directory]"; exit 2; }
 
 C=$WORK/$DIST/chroot            # the build system (about 40 GB at the end, including the Bazel cache)
-SRC=$WORK/$DIST/source          # the Checkmk sources (about 0.5 GB)
+SRC=$WORK/$DIST/source-$V       # the Checkmk sources of this version (about 0.5 GB); the chroot and the Bazel cache are shared
+                                # by all versions, so building a newer version in the same work directory is much faster
 OUT=$WORK/output; LOG=$WORK/$DIST/build-$V.log
 mkdir -p "$WORK/$DIST" "$OUT"
 log() { echo "[$(date '+%F %T')] $*" | tee -a "$LOG"; }
@@ -84,6 +85,10 @@ fi
 log "   build system: $(. "$C/etc/os-release"; echo "$PRETTY_NAME"), $(chroot "$C" gcc --version | head -1)"
 
 # ---- 2. official sources -----------------------------------------------------------------------------------------------
+# A source directory without the ".arm64-prepared" marker comes from an interrupted or failed preparation.
+if [ -d "$SRC" ] && [ ! -f "$SRC/.arm64-prepared" ]; then
+  die "$SRC was not completely prepared (interrupted, or the patch did not apply): delete it with 'rm -rf $SRC' and run again"
+fi
 if [ ! -d "$SRC/.git" ]; then
   log "2. downloading the official Checkmk sources, tag v$V"
   git clone -q --depth 1 --branch "v$V" https://github.com/Checkmk/checkmk.git "$SRC" >> "$LOG" 2>&1 || die "git clone failed"
@@ -107,7 +112,12 @@ if [ ! -d "$SRC/.git" ]; then
   if [ -n "${MAINTAINER:-}" ]; then
     sed -i -E "s|^(    maintainer = )\".*\",|\1\"$MAINTAINER\",|" "$SRC/omd/BUILD"; log "   maintainer: $MAINTAINER"
   fi
+  touch "$SRC/.arm64-prepared"      # sources downloaded and patched successfully
 fi
+
+# Safety check: the sources must be those of the requested version (tag v<version>)
+TAG=$(git -C "$SRC" -c safe.directory='*' describe --tags --exact-match 2>/dev/null)
+[ "$TAG" = "v$V" ] || die "the sources in $SRC are not those of v$V (found: ${TAG:-none}); delete this directory and run again"
 
 # ---- 4. prebuilt agent files from the official package ------------------------------------------------------------------
 # Checkmk builds its agents (Windows .msi, Linux agent packages...) separately, not from the sources.

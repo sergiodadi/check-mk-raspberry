@@ -107,7 +107,9 @@ Checkmk's internal mirror (reachable only inside their company), then the public
 
 **If something goes wrong**: read the end of the log file, fix the cause (disk full, network…) and run the same
 command again. Steps already done are skipped and the Bazel cache is kept, so the build resumes where it stopped.
-A `Ctrl-C` or a stop of the service is safe: the script always unmounts what it mounted.
+A `Ctrl-C` or a stop of the service is safe: the script always unmounts what it mounted. If the preparation itself was
+interrupted (or the patch did not apply), the script refuses the incomplete source directory and tells you to delete
+it (`rm -rf <work dir>/<distribution>/source-<version>`) before running again.
 
 ## 5. Test the package
 
@@ -146,6 +148,11 @@ distributed monitoring work normally.
 The patch is made for **2.5.0p15**. It may also apply to a later 2.5.0 patch release (this has not been tested):
 copy it to `build/checkmk-<version>-arm64.patch` and run the script with the new version. If `git apply` fails,
 the changed files must be adapted by hand. New patches will be published here with new packages.
+
+**Use the same work directory for the next version.** Each version gets its own source directory
+(`<work dir>/<distribution>/source-<version>`), while the build system and the Bazel cache are shared: the downloads
+and the components that did not change are reused, so a newer version should build faster than the first one (not measured yet).
+Before building, the script checks that the sources really are those of the requested version.
 
 ## Credits
 
