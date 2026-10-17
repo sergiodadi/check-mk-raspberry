@@ -19,6 +19,9 @@ This procedure was verified exactly as written: a complete build from an empty w
 actions, no error). The resulting package has the same file list and the same dependencies as the published
 `check-mk-community-2.5.0p15_0.trixie_arm64.deb`, and `test-install.sh` passed (installation, site running, login,
 Linux and Windows agents offered).
+The current script (with the development packages of Checkmk's build machines and the net-snmp fix) was verified on
+16-17 October 2026 with a complete rebuild for `trixie` (21 hours, no error): the package has the same files and
+dependencies as the official Checkmk package except one Agent Bakery file (see section 7), and `test-install.sh` passed.
 
 ## 1. What you need
 
@@ -137,16 +140,16 @@ To update an existing site: install the new package, then `omd update` as descri
 
 ## 7. Known differences with the official amd64 package
 
-The package contains the same files as the official package, except a few optional components that are not built
-on ARM64: `snmppcap`, the NSS variant of xmlsec1, the Python modules `netsnmp`, `_lzma` and `_tkinter`, WebP support
-in Pillow, and a few Nagios plug-ins (`check_dig`, `check_dns`, `check_by_ssh`, `check_mysql`, `check_mysql_query`).
-An unneeded directory `var/cache/bazel-cmk/…` (a few build files of rrdtool) is also included by mistake; it is harmless. Monitoring, the web interface, the agents and
-distributed monitoring work normally.
+The package contains the same files and the same dependencies as the official Checkmk package, with two exceptions:
 
-**Fix in progress**: these components are missing because the build system created by the script lacks some
-development packages that Checkmk installs on its own build machines (for example `dnsutils` for `check_dig` and
-`check_dns`, `openssh-client` for `check_by_ssh`, `default-libmysqlclient-dev` for `check_mysql`). We are adding them
-to the script and testing a new build. Updated packages and an updated script will be published here in a few days.
+- `cmk/base/cee/plugins/bakery/bakery_api/v1/__init__.py` is missing: it is a compatibility file for the Agent Bakery
+  of the commercial editions and is not part of the public sources. It is not used by the Community edition.
+- An unneeded directory `var/cache/bazel-cmk/…` (a few build files of rrdtool) is included by mistake; it is harmless.
+
+Packages published before 17 October 2026 also lacked a few optional components (`check_dig`, `check_dns`,
+`check_by_ssh`, `check_mysql`, `snmppcap`, the Python modules `netsnmp`, `_lzma`, `_tkinter`…), because the build
+system lacked some development packages and the Python bindings of net-snmp were skipped. Both are fixed in the
+current script and patch.
 
 ## 8. Other versions
 

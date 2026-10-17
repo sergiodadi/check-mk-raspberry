@@ -77,12 +77,31 @@ libfile-find-rule-perl,libglib2.0-dev,libgnutls28-dev,libgsf-1-dev,libjpeg-dev,l
 libpango1.0-dev,libperl-dev,libpng-dev,libpq-dev,libreadline-dev,libsasl2-dev,libsqlite3-dev,libssl-dev,libtool,libxml2-dev,libxslt1-dev,\
 make,ninja-build,$JDK,p7zip-full,patchelf,perl,pkg-config,python3,python3-dev,python3-venv,rsync,unzip,zip,zlib1g-dev,zstd,libcrypt-dev,\
 file,locales,bzip2,xz-utils
+# Packages of Checkmk's own build machines (buildscripts/infrastructure/build-nodes/<distro>/Dockerfile) that are needed
+# for optional components: without them, ./configure silently skips e.g. check_dig/check_dns (bind9-dnsutils, called dnsutils in the recipe), check_by_ssh
+# (openssh-client), check_mysql (default-libmysqlclient-dev), snmppcap (libpcap-dev), Python _tkinter (tk-dev), _lzma...
+EXTRA="bind9-dnsutils openssh-client default-libmysqlclient-dev libpcap-dev tk-dev libxmlsec1-dev libnss3-dev libfreeradius-dev \
+libevent-dev libgd-dev libcurl4-openssl-dev libmpfr-dev libmcrypt-dev dietlibc-dev gtk-doc-tools texinfo netcat-openbsd \
+rpcbind smbclient iputils-ping iproute2 liblzma-dev libwebp-dev"
+PKGS=$PKGS,$(echo $EXTRA | tr ' ' ',')
 if [ ! -x "$C/usr/bin/apt-get" ]; then
   log "1. creating the $DIST arm64 build system in $C (10-20 min)"
   mmdebstrap --arch=arm64 --variant=buildd --components=$COMP ${KEYRING:+--keyring=$KEYRING} --include=$PKGS "$DIST" "$C" "$MIRROR" >> "$LOG" 2>&1 \
     || die "mmdebstrap failed (see $LOG)"
 fi
 log "   build system: $(. "$C/etc/os-release"; echo "$PRETTY_NAME"), $(chroot "$C" gcc --version | head -1)"
+# A build system created by an older version of this script may lack some packages: install them now. Bazel does not
+# notice new system packages, so its cached build results must then be discarded (the downloads are kept).
+MISSING=$(for p in $(echo $PKGS | tr ',' ' '); do chroot "$C" dpkg -s "$p" >/dev/null 2>&1 || echo "$p"; done | tr '\n' ' ')
+if [ -n "$MISSING" ]; then
+  log "1b. installing packages missing in the build system: $MISSING"
+  cp /etc/resolv.conf "$C/etc/"; mount --bind /proc "$C/proc"
+  printf '#!/bin/sh\nexit 101\n' > "$C/usr/sbin/policy-rc.d"; chmod 755 "$C/usr/sbin/policy-rc.d"   # no service starts in the chroot
+  chroot "$C" apt-get -q update >> "$LOG" 2>&1 && chroot "$C" env DEBIAN_FRONTEND=noninteractive apt-get -y -q install $MISSING >> "$LOG" 2>&1
+  RC=$?; rm -f "$C/usr/sbin/policy-rc.d"; umount "$C/proc"
+  [ $RC = 0 ] || die "installation of the missing packages failed (see $LOG)"
+  touch "$WORK/$DIST/.rebuild-needed"
+fi
 
 # ---- 2. official sources -----------------------------------------------------------------------------------------------
 # A source directory without the ".arm64-prepared" marker comes from an interrupted or failed preparation.
@@ -157,6 +176,13 @@ mount --bind /dev/shm "$C/dev/shm"; mount --bind "$SRC" "$C/build/source"; mount
 IN() { chroot "$C" /usr/bin/env -i HOME=/root TMPDIR=/tmp PATH=/usr/local/bin:/usr/bin:/bin LANG=C.UTF-8 CARGO_BAZEL_REPIN=true /bin/bash -c "cd /build/source && $1"; }
 log "5. Bazel build //omd:deb_community, distro $DISTRO, $JOBS jobs - this takes about a day, progress in $LOG"
 T0=$(date +%s)
+if [ -f "$WORK/$DIST/.rebuild-needed" ]; then
+  # Bazel does not know that system packages were added: its cached results (output base and disk cache) would bring
+  # back the old build outputs. Both are deleted; the downloads (repository cache) are kept.
+  log "   new system packages: deleting the cached build results, a complete rebuild follows (about a day)"
+  IN "bazel --output_user_root=/var/cache/bazel-cmk --host_jvm_args=-Xmx1g clean" >> "$LOG" 2>&1
+  rm -rf "$C/root/.cache/bazel_disk_cache"; rm -f "$WORK/$DIST/.rebuild-needed"
+fi
 IN "bazel --output_user_root=/var/cache/bazel-cmk --host_jvm_args=-Xmx1g build --jobs=$JOBS --keep_going --verbose_failures \
     //omd:deb_community --cmk_version=$V --cmk_edition=community --@cmk//distro=$DISTRO --lockfile_mode=update" >> "$LOG" 2>&1; RC=$?
 IN "bazel --output_user_root=/var/cache/bazel-cmk --host_jvm_args=-Xmx1g shutdown" >> "$LOG" 2>&1; sleep 5   # same startup options as the build; frees the mounts

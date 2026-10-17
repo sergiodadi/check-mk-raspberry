@@ -25,7 +25,7 @@ index 1c148a1d..7141d0ae 100644
      # Python toolchain for the Windows exec platform (rules_pkg's build_zip).
      # Previously provided implicitly by WORKSPACE; see the BUILD file for why.
 diff --git a/agents/windows/BUILD b/agents/windows/BUILD
-index dcfa5733..dfa71988 100644
+index dcfa5733..eb0ea5b3 100644
 --- a/agents/windows/BUILD
 +++ b/agents/windows/BUILD
 @@ -29,7 +29,7 @@ filegroup(
@@ -908,31 +908,10 @@ index e6fc576f..91e659f8 100644
      ]),
  }
  
-diff --git a/omd/packages/net-snmp/BUILD b/omd/packages/net-snmp/BUILD
-index d2ceec3c..c3c8c53c 100644
---- a/omd/packages/net-snmp/BUILD
-+++ b/omd/packages/net-snmp/BUILD
-@@ -16,7 +16,6 @@ bin_paths = [
-     "snmpget",
-     "snmpgetnext",
-     "snmpnetstat",
--    "snmppcap",
-     "snmpping",
-     "snmpps",
-     "snmpset",
 diff --git a/omd/packages/net-snmp/BUILD.net-snmp.bazel b/omd/packages/net-snmp/BUILD.net-snmp.bazel
-index bde60deb..b2b827d3 100644
+index bde60deb..184cfcf8 100644
 --- a/omd/packages/net-snmp/BUILD.net-snmp.bazel
 +++ b/omd/packages/net-snmp/BUILD.net-snmp.bazel
-@@ -34,7 +34,7 @@ configure_make(
-         "@@//omd/packages/perl-modules:perl-modules.tar",
-         "@@//omd/packages/python3-modules:compiled_setuptools.tar",
-     ],
--    configure_in_place = True,
-+    configure_in_place = False,
-     configure_options = [
-         "-v",
-         "--enable-ipv6",
 @@ -87,8 +87,10 @@ configure_make(
          "PKG_CONFIG_PATH": ":".join([
              "/usr/lib/pkgconfig",
@@ -945,15 +924,7 @@ index bde60deb..b2b827d3 100644
          "RANLIB": "ranlib",
          "SETUPTOOLS_TAR": "$(execpath @@//omd/packages/python3-modules:compiled_setuptools.tar)",
          "PYTHONPATH": "$$(dirname $(execpath @@//omd/packages/python3-modules:compiled_setuptools.tar))/lib/python%s/site-packages/" % PYTHON_MAJOR_DOT_MINOR,
-@@ -100,7 +102,6 @@ configure_make(
-         "snmpbulkwalk",
-         "snmpdf",
-         "snmpgetnext",
--        "snmppcap",
-         "snmpps",
-         "snmpstatus",
-         "snmptest",
-@@ -169,11 +170,17 @@ configure_make(
+@@ -169,11 +171,17 @@ configure_make(
                  --single-version-externally-managed
          cd -
          echo "Build perl"
