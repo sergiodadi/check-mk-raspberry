@@ -9,7 +9,7 @@ Checkmk does not publish ARM packages. This repository provides `.deb` packages 
 | Family | Latest release | Package |
 |---|---|---|
 | **Debian** (Raspberry Pi OS) | [2.5.0p16 — Debian 13 trixie](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p16-trixie) | `check-mk-community-2.5.0p16_0.trixie_arm64.deb` |
-| **Ubuntu** | [2.5.0p15 — Ubuntu 26.04 resolute](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p15-resolute) | `check-mk-community-2.5.0p15_0.resolute_arm64.deb` |
+| **Ubuntu** | [2.5.0p16 — Ubuntu 26.04 resolute](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p16-resolute) | `check-mk-community-2.5.0p16_0.resolute_arm64.deb` |
 
 GitHub marks only one release as *Latest*; use this table to find the latest package for your distribution.
 
@@ -18,6 +18,7 @@ GitHub marks only one release as *Latest*; use this table to find the latest pac
 | Checkmk | Edition | Target | Package |
 |---|---|---|---|
 | **2.5.0p16** | Community | Debian 13 / Raspberry Pi OS **trixie**, **arm64** | `check-mk-community-2.5.0p16_0.trixie_arm64.deb` |
+| **2.5.0p16** | Community | Ubuntu **26.04 resolute**, **arm64** | `check-mk-community-2.5.0p16_0.resolute_arm64.deb` |
 | **2.5.0p15** | Community | Debian 12 / Raspberry Pi OS **bookworm**, **arm64** | `check-mk-community-2.5.0p15_0.bookworm_arm64.deb` |
 | **2.5.0p15** | Community | Debian 13 / Raspberry Pi OS **trixie**, **arm64** | `check-mk-community-2.5.0p15_0.trixie_arm64.deb` |
 | **2.5.0p15** | Community | Ubuntu **24.04 noble**, **arm64** | `check-mk-community-2.5.0p15_0.noble_arm64.deb` |
@@ -67,6 +68,7 @@ All steps, requirements, options and tests are explained in **[BUILD.md](BUILD.m
 
 | Date | Version | Target |
 |---|---|---|
+| 2026-10 | [2.5.0p16-resolute](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p16-resolute) (Community) | Ubuntu 26.04 resolute arm64 |
 | 2026-10 | [2.5.0p16-trixie](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p16-trixie) (Community) | trixie arm64 |
 | 2026-10 | [2.5.0p15-resolute](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p15-resolute) (Community) | Ubuntu 26.04 resolute arm64 |
 | 2026-10 | [2.5.0p15-noble](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p15-noble) (Community) | Ubuntu 24.04 noble arm64 |
