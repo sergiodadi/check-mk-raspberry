@@ -41,7 +41,7 @@ Supported targets:
 | Debian 12 / Raspberry Pi OS bookworm | `bookworm` | built and published |
 | Debian 13 / Raspberry Pi OS trixie | `trixie` | built, published, real test on a Raspberry Pi 5 |
 | Ubuntu 24.04 LTS | `noble` | built and published |
-| Ubuntu 26.04 LTS | `resolute` | **not tested** (newer compiler, gcc 15: adjustments may be needed) |
+| Ubuntu 26.04 LTS | `resolute` | tested (build and installation test; built with gcc 14, like the official Checkmk packages) |
 
 ## 2. Install the tools
 

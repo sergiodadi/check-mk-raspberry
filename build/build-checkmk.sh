@@ -7,7 +7,7 @@
 #     ./build-checkmk.sh 2.5.0p15 trixie /srv/checkmk-build
 #
 #   <version>       Checkmk version, e.g. 2.5.0p15 (a matching patch build/checkmk-<version>-arm64.patch must exist)
-#   <distribution>  bookworm (Debian 12), trixie (Debian 13), noble (Ubuntu 24.04), resolute (Ubuntu 26.04, not tested)
+#   <distribution>  bookworm (Debian 12), trixie (Debian 13), noble (Ubuntu 24.04), resolute (Ubuntu 26.04)
 #   [work dir]      where everything is stored (default: ./work). Needs about 60 GB of free space.
 #
 # What the script does (each step is skipped if it was already done, so you can simply run it again after a problem):
@@ -38,7 +38,9 @@ case "$DIST" in
   bookworm) DISTRO=debian-12;    GCC=12; JDK=openjdk-17-jdk-headless; MIRROR=http://deb.debian.org/debian;          COMP=main;;
   trixie)   DISTRO=debian-13;    GCC=14; JDK=openjdk-21-jdk-headless; MIRROR=http://deb.debian.org/debian;          COMP=main;;
   noble)    DISTRO=ubuntu-24.04; GCC=13; JDK=openjdk-21-jdk-headless; MIRROR=http://ports.ubuntu.com/ubuntu-ports; COMP=main,universe;;
-  resolute) DISTRO=ubuntu-26.04; GCC=15; JDK=openjdk-21-jdk-headless; MIRROR=http://ports.ubuntu.com/ubuntu-ports; COMP=main,universe;;
+  resolute) DISTRO=ubuntu-26.04; GCC=14; JDK=openjdk-21-jdk-headless; MIRROR=http://ports.ubuntu.com/ubuntu-ports; COMP=main,universe;;
+            # Ubuntu 26.04: gcc 14 (package gcc-14) and not the default gcc 15, whose C23 default rejects old C code (bool/true
+            # in the glib of pkg-config, heirloom-pkgtools). Checkmk itself builds all distributions with gcc 14.
   *) echo "usage: $0 <version> <bookworm|trixie|noble|resolute> [work directory]"; exit 2;;
 esac
 [ -n "$V" ] || { echo "usage: $0 <version> <distribution> [work directory]"; exit 2; }
@@ -84,6 +86,9 @@ EXTRA="bind9-dnsutils openssh-client default-libmysqlclient-dev libpcap-dev tk-d
 libevent-dev libgd-dev libcurl4-openssl-dev libmpfr-dev libmcrypt-dev dietlibc-dev gtk-doc-tools texinfo netcat-openbsd \
 rpcbind smbclient iputils-ping iproute2 liblzma-dev libwebp-dev"
 PKGS=$PKGS,$(echo $EXTRA | tr ' ' ',')
+# Ubuntu 26.04: p7zip-full is only a virtual name there (the real package is 7zip: "dpkg -s p7zip-full" would fail at each
+# run and force a complete rebuild), and gcc 14 must be installed next to the default gcc 15.
+[ "$DIST" = resolute ] && PKGS=${PKGS/p7zip-full/7zip},gcc-14,g++-14
 if [ ! -x "$C/usr/bin/apt-get" ]; then
   log "1. creating the $DIST arm64 build system in $C (10-20 min)"
   mmdebstrap --arch=arm64 --variant=buildd --components=$COMP ${KEYRING:+--keyring=$KEYRING} --include=$PKGS "$DIST" "$C" "$MIRROR" >> "$LOG" 2>&1 \
