@@ -16,7 +16,7 @@
 #   3. applies the ARM64 patch (build/checkmk-<version>-arm64.patch) and adapts the gcc version to the distribution
 #   4. downloads the official Checkmk package of the same version (amd64) and copies its prebuilt agent files
 #      (Linux agent .deb/.rpm, Windows agent .msi, signed plug-ins, mk-oracle): they cannot be built from the sources
-#   5. builds the package with Bazel (about 20-24 hours on a Raspberry Pi 5, 8 GB)
+#   5. builds the package with Bazel (about 3 hours on a Raspberry Pi 5, 8 GB)
 #   6. copies the result to <work dir>/output/check-mk-community-<version>_0.<distribution>_arm64.deb
 #
 # Optional environment variables:
@@ -179,12 +179,12 @@ cp /etc/resolv.conf "$C/etc/"; mkdir -p "$C/build/source" "$C/usr/local/bin"; to
 mount --bind /proc "$C/proc"; mount --bind /sys "$C/sys"; mount --bind /dev "$C/dev"; mount --bind /dev/pts "$C/dev/pts"
 mount --bind /dev/shm "$C/dev/shm"; mount --bind "$SRC" "$C/build/source"; mount --bind "$BZ" "$C/usr/local/bin/bazel"
 IN() { chroot "$C" /usr/bin/env -i HOME=/root TMPDIR=/tmp PATH=/usr/local/bin:/usr/bin:/bin LANG=C.UTF-8 CARGO_BAZEL_REPIN=true /bin/bash -c "cd /build/source && $1"; }
-log "5. Bazel build //omd:deb_community, distro $DISTRO, $JOBS jobs - this takes about a day, progress in $LOG"
+log "5. Bazel build //omd:deb_community, distro $DISTRO, $JOBS jobs - this takes about 3 hours, progress in $LOG"
 T0=$(date +%s)
 if [ -f "$WORK/$DIST/.rebuild-needed" ]; then
   # Bazel does not know that system packages were added: its cached results (output base and disk cache) would bring
   # back the old build outputs. Both are deleted; the downloads (repository cache) are kept.
-  log "   new system packages: deleting the cached build results, a complete rebuild follows (about a day)"
+  log "   new system packages: deleting the cached build results, a complete rebuild follows (about 3 hours)"
   IN "bazel --output_user_root=/var/cache/bazel-cmk --host_jvm_args=-Xmx1g clean" >> "$LOG" 2>&1
   rm -rf "$C/root/.cache/bazel_disk_cache"; rm -f "$WORK/$DIST/.rebuild-needed"
 fi

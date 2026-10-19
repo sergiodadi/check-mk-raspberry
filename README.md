@@ -48,7 +48,7 @@ On Debian 13 trixie, install with `apt install ./<package>.deb php8.4-cgi` (see 
 
 The Checkmk 2.5 packages are built from the official Checkmk sources with two commented scripts and an ARM64 patch,
 published in the [`build/`](build/) directory. On a 64-bit Raspberry Pi (8 GB of RAM, about 60 GB of free disk) or any
-other arm64 machine, a single command builds the package for Debian 12, Debian 13 or Ubuntu 24.04 (about one day):
+other arm64 machine, a single command builds the package for Debian 12, Debian 13, Ubuntu 24.04 or Ubuntu 26.04 (about 3 hours on a Raspberry Pi 5):
 
 ```
 sudo apt install mmdebstrap git curl

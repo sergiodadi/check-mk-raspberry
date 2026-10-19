@@ -23,6 +23,11 @@ The current script (with the development packages of Checkmk's build machines an
 16-17 October 2026 with a complete rebuild for `trixie` (21 hours, no error): the package has the same files and
 dependencies as the official Checkmk package except one Agent Bakery file (see section 7), and `test-install.sh` passed.
 
+**Note on build times (19 October 2026):** the build times given above (21 to 23 hours) were caused by a temporary
+internal network issue on our build machine, now fixed. They do not reflect the build itself: with a working network,
+a complete build from scratch takes **about 3 hours** on the same Raspberry Pi 5 (8 GB) — for example 184 minutes for
+2.5.0p16 (trixie) and 188 minutes for 2.5.0p15 (resolute).
+
 ## 1. What you need
 
 | | |
@@ -30,7 +35,7 @@ dependencies as the official Checkmk package except one Agent Bakery file (see s
 | Machine | 64-bit ARM (arm64/aarch64) with **8 GB of RAM** — e.g. a Raspberry Pi 5 8 GB. A Pi 4 8 GB works too, but is slower. |
 | System | Debian 12/13 or Raspberry Pi OS **64-bit** (the target distribution can be different: the build runs in its own system) |
 | Disk | **About 40 GB** used by the build (36 GB measured for trixie); keep **60 GB free** to be safe. Fast storage recommended: SSD/NVMe rather than an SD card |
-| Time | **About 23 hours** on a Raspberry Pi 5 (8 GB) for a first build (most of it is spent in the last few hundred actions) |
+| Time | **About 3 hours** on a Raspberry Pi 5 (8 GB) for a first build. A newer version built in the same work directory is faster: only what changed is rebuilt |
 | Network | About 3 GB of downloads (sources, build system, Bazel dependencies, official agents) |
 | Rights | root (`sudo`) |
 
@@ -65,7 +70,7 @@ Choose a work directory with 60 GB free, then run (example for Debian 13 trixie)
 sudo ./build/build-checkmk.sh 2.5.0p15 trixie /srv/checkmk-build
 ```
 
-The build takes about a day. To keep it running after you close your SSH session, use `tmux` or `screen`, or start it
+The build takes about 3 hours. To keep it running after you close your SSH session, use `tmux` or `screen`, or start it
 as a background service (it also keeps the Raspberry Pi responsive):
 
 ```
