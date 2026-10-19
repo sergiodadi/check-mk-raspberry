@@ -1,0 +1,1221 @@
+diff --git a/MODULE.bazel b/MODULE.bazel
+index 1c148a1d..7141d0ae 100644
+--- a/MODULE.bazel
++++ b/MODULE.bazel
+@@ -365,10 +365,10 @@ http_archive(
+ 
+ http_file(
+     name = "jaeger",
+-    sha256 = "1d810bf04f7e08dac796ad532fc68f1a8fceb0333d2524ae767d88533e69ed75",
++    sha256 = "a4c245e1e928ce16e89ae995cecf6cda748d24a8fff6e7ca84758552563a04e5",
+     urls = [
+-        "https://github.com/jaegertracing/jaeger/releases/download/v2.18.0/jaeger-2.18.0-linux-amd64.tar.gz",
+-        UPSTREAM_MIRROR_URL + "jaeger-2.18.0-linux-amd64.tar.gz",
++        "https://github.com/jaegertracing/jaeger/releases/download/v2.18.0/jaeger-2.18.0-linux-arm64.tar.gz",
++        UPSTREAM_MIRROR_URL + "jaeger-2.18.0-linux-arm64.tar.gz",
+     ],
+ )
+ 
+@@ -729,6 +729,7 @@ register_toolchains(
+     "@musl_toolchains_hub//:all",
+     "//bazel/toolchains/cc/gcc:host_gcc_toolchain",
+     "//bazel/toolchains/cc/gcc/local:linux_x86_64",
++    "//bazel/toolchains/cc/gcc/local:linux_aarch64",
+     "//bazel/toolchains/cc/clang:x86_64_windows_msvc_toolchain",
+     # Python toolchain for the Windows exec platform (rules_pkg's build_zip).
+     # Previously provided implicitly by WORKSPACE; see the BUILD file for why.
+diff --git a/agents/windows/BUILD b/agents/windows/BUILD
+index dcfa5733..eb0ea5b3 100644
+--- a/agents/windows/BUILD
++++ b/agents/windows/BUILD
+@@ -29,7 +29,7 @@ filegroup(
+ # The rule outputs python_3_cab.cab; the package expects python-3.cab.
+ copy_file(
+     name = "python_cab",
+-    src = "//agents/modules/windows:python_3_cab",
++    src = "python-3.cab.prebuilt",  # official prebuilt file, taken from the official package of the same version
+     out = "python-3.cab",
+     visibility = ["//omd:__subpackages__"],
+ )
+diff --git a/bazel/module/py.MODULE.bazel b/bazel/module/py.MODULE.bazel
+index a296b435..c0f4cbe2 100644
+--- a/bazel/module/py.MODULE.bazel
++++ b/bazel/module/py.MODULE.bazel
+@@ -20,6 +20,14 @@ python.single_version_platform_override(
+         "https://github.com/astral-sh/python-build-standalone/releases/download/20260610/cpython-3.13.14+20260610-x86_64-pc-windows-msvc-install_only.tar.gz",
+     ],
+ )
++python.single_version_platform_override(
++    platform = "aarch64-unknown-linux-gnu",
++    python_version = "3.13.14",
++    sha256 = "fe5b366ecf26fe565113b195a03ea18d7030f2dab691c0bed41cf19318100be2",
++    urls = [
++        "https://github.com/astral-sh/python-build-standalone/releases/download/20260610/cpython-3.13.14+20260610-aarch64-unknown-linux-gnu-install_only.tar.gz",
++    ],
++)
+ python.defaults(python_version = "3.13")
+ python.toolchain(
+     configure_coverage_tool = True,
+@@ -64,112 +72,8 @@ types.requirements(
+ )
+ use_repo(types, "cmk_types")
+ 
+-# ATTENTION: The following python toolchains are solely used for testing the agent plugins with multiple python versions.
+-python.single_version_platform_override(
+-    platform = "x86_64-unknown-linux-gnu",
+-    python_version = "3.8.20",
+-    sha256 = "285e141c36f88b2e9357654c5f77d1f8fb29cc25132698fe35bb30d787f38e87",
+-    urls = [
+-        "https://github.com/astral-sh/python-build-standalone/releases/download/20241002/cpython-3.8.20+20241002-x86_64-unknown-linux-gnu-install_only.tar.gz",
+-    ],
+-)
+-python.toolchain(
+-    python_version = "3.8",
+-)
+-python.single_version_platform_override(
+-    platform = "x86_64-unknown-linux-gnu",
+-    python_version = "3.9.25",
+-    sha256 = "42834f61eb6df43432c3dd6ab9ca3fdf8c06d10a404ebdb53d6902e6b9570b08",
+-    urls = [
+-        "https://github.com/astral-sh/python-build-standalone/releases/download/20251031/cpython-3.9.25+20251031-x86_64-unknown-linux-gnu-install_only.tar.gz",
+-    ],
+-)
+-python.toolchain(
+-    python_version = "3.9",
+-)
+-python.single_version_platform_override(
+-    platform = "x86_64-unknown-linux-gnu",
+-    python_version = "3.10.19",
+-    sha256 = "42133dd8bc7a2f3eee0e6f544a074149d1dc96621be12afdeb4d24ef66ce9db4",
+-    urls = [
+-        "https://github.com/astral-sh/python-build-standalone/releases/download/20251120/cpython-3.10.19+20251120-x86_64-unknown-linux-gnu-install_only.tar.gz",
+-    ],
+-)
+-python.toolchain(
+-    python_version = "3.10",
+-)
+-python.single_version_platform_override(
+-    platform = "x86_64-unknown-linux-gnu",
+-    python_version = "3.11.14",
+-    sha256 = "ca464c619ba4c3754a430acb2c0eb0e354cccc08b4f38ade71fbe3e732ec93a3",
+-    urls = [
+-        "https://github.com/astral-sh/python-build-standalone/releases/download/20251120/cpython-3.11.14+20251120-x86_64-unknown-linux-gnu-install_only.tar.gz",
+-    ],
+-)
+-python.toolchain(
+-    python_version = "3.11",
+-)
+-python.single_version_platform_override(
+-    platform = "x86_64-unknown-linux-gnu",
+-    python_version = "3.12.12",
+-    sha256 = "c17aadf3265258bf3b4ee5182bdca24f3e4b34ffaa0a73b5efe2d84ddb9fcccc",
+-    urls = [
+-        "https://github.com/astral-sh/python-build-standalone/releases/download/20251120/cpython-3.12.12+20251120-x86_64-unknown-linux-gnu-install_only.tar.gz",
+-    ],
+-)
+-python.toolchain(
+-    python_version = "3.12",
+-)
+-use_repo(
+-    python,
+-    "python_3_10",
+-    "python_3_11",
+-    "python_3_12",
+-    "python_3_13",
+-    "python_3_8",
+-    "python_3_9",
+-)
++use_repo(python, "python_3_13")
+ 
+-pip.parse(
+-    hub_name = "agent_plugins_requirements_3_8",
+-    python_version = "3.8",
+-    requirements_by_platform = {
+-        "@//tests/agent-plugin-unit:requirements_3_8.txt": "linux_*",
+-    },
+-)
+-use_repo(pip, "agent_plugins_requirements_3_8")
+-pip.parse(
+-    hub_name = "agent_plugins_requirements_3_9",
+-    python_version = "3.9",
+-    requirements_by_platform = {
+-        "@//tests/agent-plugin-unit:requirements_3_9.txt": "linux_*",
+-    },
+-)
+-use_repo(pip, "agent_plugins_requirements_3_9")
+-pip.parse(
+-    hub_name = "agent_plugins_requirements_3_10",
+-    python_version = "3.10",
+-    requirements_by_platform = {
+-        "@//tests/agent-plugin-unit:requirements_3_10.txt": "linux_*",
+-    },
+-)
+-use_repo(pip, "agent_plugins_requirements_3_10")
+-pip.parse(
+-    hub_name = "agent_plugins_requirements_3_11",
+-    python_version = "3.11",
+-    requirements_by_platform = {
+-        "@//tests/agent-plugin-unit:requirements_3_11.txt": "linux_*",
+-    },
+-)
+-use_repo(pip, "agent_plugins_requirements_3_11")
+-pip.parse(
+-    hub_name = "agent_plugins_requirements_3_12",
+-    python_version = "3.12",
+-    requirements_by_platform = {
+-        "@//tests/agent-plugin-unit:requirements_3_12.txt": "linux_*",
+-    },
+-)
+-use_repo(pip, "agent_plugins_requirements_3_12")
+ pip.parse(
+     hub_name = "agent_plugins_requirements_3_13",
+     python_version = "3.13",
+diff --git a/bazel/module/rust/host.MODULE.bazel b/bazel/module/rust/host.MODULE.bazel
+index 6b8d783a..b035aaaf 100644
+--- a/bazel/module/rust/host.MODULE.bazel
++++ b/bazel/module/rust/host.MODULE.bazel
+@@ -18,6 +18,7 @@ host_crates.from_cargo(
+     supported_platform_triples = [
+         "x86_64-unknown-linux-gnu",
+         "aarch64-unknown-linux-gnu",
++        "x86_64-unknown-linux-musl",
+         "x86_64-pc-windows-msvc",
+     ],
+ )
+diff --git a/bazel/module/rust/site.MODULE.bazel b/bazel/module/rust/site.MODULE.bazel
+index 2a0a77b5..e9c305ea 100644
+--- a/bazel/module/rust/site.MODULE.bazel
++++ b/bazel/module/rust/site.MODULE.bazel
+@@ -11,7 +11,7 @@ site_crates.from_cargo(
+         "//packages/check-cert:Cargo.toml",
+         "//packages/check-http:Cargo.toml",
+     ],
+-    supported_platform_triples = ["x86_64-unknown-linux-gnu"],
++    supported_platform_triples = ["aarch64-unknown-linux-gnu"],
+ )
+ use_repo(site_crates, "site_crates")
+ site_crates.annotation(
+diff --git a/bazel/thirdparty/modules/glib/2.0.cmk.1/src/BUILD.glib.bazel b/bazel/thirdparty/modules/glib/2.0.cmk.1/src/BUILD.glib.bazel
+index 633ad6e0..29c6cc7f 100644
+--- a/bazel/thirdparty/modules/glib/2.0.cmk.1/src/BUILD.glib.bazel
++++ b/bazel/thirdparty/modules/glib/2.0.cmk.1/src/BUILD.glib.bazel
+@@ -3,14 +3,14 @@ cc_library(
+     hdrs = select(
+         {
+             "@cmk//filesystem_layout:fhs": ["lib64/glib-2.0/include/glibconfig.h"],
+-            "@cmk//filesystem_layout:lsb": ["lib/x86_64-linux-gnu/glib-2.0/include/glibconfig.h"],
++            "@cmk//filesystem_layout:lsb": ["lib/aarch64-linux-gnu/glib-2.0/include/glibconfig.h"],
+         },
+         no_match_error = "Please build with lsb or fhs filesystem layout",
+     ),
+     includes = select(
+         {
+             "@cmk//filesystem_layout:fhs": ["lib64/glib-2.0/include"],
+-            "@cmk//filesystem_layout:lsb": ["lib/x86_64-linux-gnu/glib-2.0/include"],
++            "@cmk//filesystem_layout:lsb": ["lib/aarch64-linux-gnu/glib-2.0/include"],
+         },
+         no_match_error = "Please build with lsb or fhs filesystem layout",
+     ),
+@@ -22,7 +22,7 @@ cc_import(
+     shared_library = select(
+         {
+             "@cmk//filesystem_layout:fhs": "lib64/libglib-2.0.so",
+-            "@cmk//filesystem_layout:lsb": "lib/x86_64-linux-gnu/libglib-2.0.so",
++            "@cmk//filesystem_layout:lsb": "lib/aarch64-linux-gnu/libglib-2.0.so",
+         },
+         no_match_error = "Please build with lsb or fhs filesystem layout",
+     ),
+diff --git a/bazel/thirdparty/modules/libgsf/1.14.44.cmk.5/overlay/BUILD.bazel b/bazel/thirdparty/modules/libgsf/1.14.44.cmk.5/overlay/BUILD.bazel
+index 2e8ef3f1..d0a49791 100644
+--- a/bazel/thirdparty/modules/libgsf/1.14.44.cmk.5/overlay/BUILD.bazel
++++ b/bazel/thirdparty/modules/libgsf/1.14.44.cmk.5/overlay/BUILD.bazel
+@@ -62,7 +62,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+     },
+     lib_source = ":srcs",
+diff --git a/bazel/thirdparty/modules/libgsf/1.14.44.cmk.5/source.json b/bazel/thirdparty/modules/libgsf/1.14.44.cmk.5/source.json
+index ced7169e..b07669de 100644
+--- a/bazel/thirdparty/modules/libgsf/1.14.44.cmk.5/source.json
++++ b/bazel/thirdparty/modules/libgsf/1.14.44.cmk.5/source.json
+@@ -3,7 +3,7 @@
+   "strip_prefix": "libgsf-1.14.44",
+   "url": "https://ftp.osuosl.org/pub/blfs/conglomeration/libgsf/libgsf-1.14.44.tar.xz",
+   "overlay": {
+-    "BUILD.bazel": "sha256-kFkuYNKKudt3UeJSNdT26JfQKTkcwJglS6W0RaeLFDc=",
++    "BUILD.bazel": "sha256-78CRV3vuQqzrbE23GgnTgnB0cj8sq4HyBf8aUOjgEx8=",
+     "MODULE.bazel": "sha256-P/MMtBazMQny3wsKEn2n0thxBZ/50AGSGCdUUpJoZrE="
+   },
+   "patches": {
+diff --git a/bazel/thirdparty/modules/libxml2/2.0.cmk.1/src/BUILD.libxml2.bazel b/bazel/thirdparty/modules/libxml2/2.0.cmk.1/src/BUILD.libxml2.bazel
+index ec8226f3..0e381425 100644
+--- a/bazel/thirdparty/modules/libxml2/2.0.cmk.1/src/BUILD.libxml2.bazel
++++ b/bazel/thirdparty/modules/libxml2/2.0.cmk.1/src/BUILD.libxml2.bazel
+@@ -3,7 +3,7 @@ cc_import(
+     shared_library = select(
+         {
+             "@cmk//filesystem_layout:fhs": "lib64/libxml2.so",
+-            "@cmk//filesystem_layout:lsb": "lib/x86_64-linux-gnu/libxml2.so",
++            "@cmk//filesystem_layout:lsb": "lib/aarch64-linux-gnu/libxml2.so",
+         },
+         no_match_error = "Please build with lsb or fhs filesystem layout",
+     ),
+diff --git a/bazel/thirdparty/modules/mod_fcgid/2.3.9.cmk.2/overlay/BUILD.bazel b/bazel/thirdparty/modules/mod_fcgid/2.3.9.cmk.2/overlay/BUILD.bazel
+index 44242f25..e075e812 100644
+--- a/bazel/thirdparty/modules/mod_fcgid/2.3.9.cmk.2/overlay/BUILD.bazel
++++ b/bazel/thirdparty/modules/mod_fcgid/2.3.9.cmk.2/overlay/BUILD.bazel
+@@ -32,7 +32,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+     },
+     lib_source = ":all_srcs",
+diff --git a/bazel/thirdparty/modules/mod_fcgid/2.3.9.cmk.2/source.json b/bazel/thirdparty/modules/mod_fcgid/2.3.9.cmk.2/source.json
+index ff1dd8f7..dc891536 100644
+--- a/bazel/thirdparty/modules/mod_fcgid/2.3.9.cmk.2/source.json
++++ b/bazel/thirdparty/modules/mod_fcgid/2.3.9.cmk.2/source.json
+@@ -3,7 +3,7 @@
+   "strip_prefix": "mod_fcgid-2.3.9",
+   "url": "https://downloads.apache.org/httpd/mod_fcgid/mod_fcgid-2.3.9.tar.gz",
+   "overlay": {
+-    "BUILD.bazel": "sha256-yEGyHnHdRD/WXuJMsngB4vD6HTXnl2vGrtKFL62s37Y=",
++    "BUILD.bazel": "sha256-ZUQAtoIXAhEXVJvVo8ErMLmJbJQ9GTb3jW7MmN0Od7M=",
+     "MODULE.bazel": "sha256-+E9m3HE5UiYNz/AXEW7iS/ddKxWEZNyLlFaG7pQ5lJo="
+   },
+   "patches": {
+diff --git a/bazel/thirdparty/modules/msitools/0.94.cmk.9/overlay/BUILD.bazel b/bazel/thirdparty/modules/msitools/0.94.cmk.9/overlay/BUILD.bazel
+index f624e88a..10ac9b8c 100644
+--- a/bazel/thirdparty/modules/msitools/0.94.cmk.9/overlay/BUILD.bazel
++++ b/bazel/thirdparty/modules/msitools/0.94.cmk.9/overlay/BUILD.bazel
+@@ -37,7 +37,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+     } | select(
+         {
+diff --git a/bazel/thirdparty/modules/msitools/0.94.cmk.9/source.json b/bazel/thirdparty/modules/msitools/0.94.cmk.9/source.json
+index fdeb0ae4..e0571486 100644
+--- a/bazel/thirdparty/modules/msitools/0.94.cmk.9/source.json
++++ b/bazel/thirdparty/modules/msitools/0.94.cmk.9/source.json
+@@ -3,7 +3,7 @@
+   "strip_prefix": "msitools-0.94",
+   "url": "http://ftp.gnome.org/pub/GNOME/sources/msitools/0.94/msitools-0.94.tar.xz",
+   "overlay": {
+-    "BUILD.bazel": "sha256-Dm5WH5GUQV5G6SNVXisdcCmzrwimsEnMuu8q4JBRfIA=",
++    "BUILD.bazel": "sha256-QK5n/WPJOjK9oQ4ndFbf9jEmUAgAF3gQePf4bGevfZ4=",
+     "MODULE.bazel": "sha256-x0ZTt/WMbPvvAfLtKQo+B+lqx4tXJsBUiNh07mW2LEs="
+   },
+   "patches": {
+diff --git a/bazel/thirdparty/modules/nagios/3.5.1.cmk.2/overlay/BUILD.bazel b/bazel/thirdparty/modules/nagios/3.5.1.cmk.2/overlay/BUILD.bazel
+index 6905332a..cb3837ff 100644
+--- a/bazel/thirdparty/modules/nagios/3.5.1.cmk.2/overlay/BUILD.bazel
++++ b/bazel/thirdparty/modules/nagios/3.5.1.cmk.2/overlay/BUILD.bazel
+@@ -66,6 +66,7 @@ configure_make(
+         # lock_file, p1_file, check_result_path, ...) to an
+         # OMD-site-specific value before nagios opens any file.
+         "--prefix=/usr",
++        "--build=aarch64-unknown-linux-gnu",
+         "--bindir=/usr/lib/omd/nagios",
+         "--sbindir=/usr/lib/omd/nagios",
+         "--libdir=/usr/lib/omd/nagios",
+@@ -87,7 +88,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+     },
+     lib_source = ":all_srcs",
+diff --git a/bazel/thirdparty/modules/nagios/3.5.1.cmk.2/source.json b/bazel/thirdparty/modules/nagios/3.5.1.cmk.2/source.json
+index a52a0155..67d13c0b 100644
+--- a/bazel/thirdparty/modules/nagios/3.5.1.cmk.2/source.json
++++ b/bazel/thirdparty/modules/nagios/3.5.1.cmk.2/source.json
+@@ -3,7 +3,7 @@
+   "strip_prefix": "nagios",
+   "url": "https://assets.nagios.com/downloads/nagioscore/releases/nagios-3.5.1.tar.gz",
+   "overlay": {
+-    "BUILD.bazel": "sha256-XJBHZxpWdYW+Rz2ebJx1zOBqwXi95Nwzbegb2dzulO0=",
++    "BUILD.bazel": "sha256-XBky9qThrHQcysYB37xsiPSrwyUarjnUF2mFNiuZ1Rs=",
+     "MODULE.bazel": "sha256-k1jOgDCpvbcT5vZpdHxHTr1MnQRwC09+CO4JmrEE6oU="
+   },
+   "patches": {
+diff --git a/bazel/thirdparty/modules/openssl/3.5.7.cmk.1/overlay/BUILD.bazel b/bazel/thirdparty/modules/openssl/3.5.7.cmk.1/overlay/BUILD.bazel
+index 35b71d56..46faea40 100644
+--- a/bazel/thirdparty/modules/openssl/3.5.7.cmk.1/overlay/BUILD.bazel
++++ b/bazel/thirdparty/modules/openssl/3.5.7.cmk.1/overlay/BUILD.bazel
+@@ -133,6 +133,7 @@ configure_make(
+         "-O2",
+     ] + select({
+         "@platforms//cpu:aarch64": ["linux-aarch64"],
++        "@platforms//cpu:x86_64": ["linux-x86_64"],
+         "//conditions:default": [],
+     }),
+     lib_name = "openssl_static",
+diff --git a/bazel/thirdparty/modules/openssl/3.5.7.cmk.1/source.json b/bazel/thirdparty/modules/openssl/3.5.7.cmk.1/source.json
+index fe3df7d2..8c35354f 100644
+--- a/bazel/thirdparty/modules/openssl/3.5.7.cmk.1/source.json
++++ b/bazel/thirdparty/modules/openssl/3.5.7.cmk.1/source.json
+@@ -3,7 +3,7 @@
+   "strip_prefix": "openssl-3.5.7",
+   "url": "https://github.com/openssl/openssl/releases/download/openssl-3.5.7/openssl-3.5.7.tar.gz",
+   "overlay": {
+-    "BUILD.bazel": "sha256-e2OPaj2Jv9ctWWlmTKq5fYHwBetHtdjmFzkyJH5HqgE=",
++    "BUILD.bazel": "sha256-f5TtorG5Lr9JDUSivEkZAUD2TtP2p5uHm0NDYUSwV8s=",
+     "MODULE.bazel": "sha256-vC+/IMOqHRFPVflRnmmxYd5fOoJ1cJ21+ATiM6ZMzxw="
+   },
+   "patches": {
+diff --git a/bazel/thirdparty/modules/perl-modules/0.0.1.cmk.5/src/BUILD.bazel b/bazel/thirdparty/modules/perl-modules/0.0.1.cmk.5/src/BUILD.bazel
+index ef8ac1a4..5e856ac2 100644
+--- a/bazel/thirdparty/modules/perl-modules/0.0.1.cmk.5/src/BUILD.bazel
++++ b/bazel/thirdparty/modules/perl-modules/0.0.1.cmk.5/src/BUILD.bazel
+@@ -64,6 +64,8 @@ genrule(
+     ],
+     cmd = """
+         set -x
++        export TAR_OPTIONS=--no-same-owner
++        export TAR_OPTIONS=--no-same-owner
+         mkdir perl-modules
+         export PATH=$$PWD/perl-modules/bin:$$PATH
+         export PERL_MM_OPT=INSTALL_BASE=$$PWD/perl-modules
+diff --git a/bazel/thirdparty/modules/pnp4nagios/0.6.26.cmk.2/overlay/BUILD.bazel b/bazel/thirdparty/modules/pnp4nagios/0.6.26.cmk.2/overlay/BUILD.bazel
+index fcf1f179..b3313be7 100644
+--- a/bazel/thirdparty/modules/pnp4nagios/0.6.26.cmk.2/overlay/BUILD.bazel
++++ b/bazel/thirdparty/modules/pnp4nagios/0.6.26.cmk.2/overlay/BUILD.bazel
+@@ -31,6 +31,7 @@ configure_make(
+     configure_options = [
+         "-v",
+         "--bindir=$$INSTALLDIR/bin",
++        "--build=aarch64-unknown-linux-gnu",
+         "--sysconfdir=$$INSTALLDIR/etc/pnp4nagios",
+         "--libexecdir=$$INSTALLDIR/lib/pnp4nagios",
+         "--docdir=$$INSTALLDIR/share/doc/pnp4nagios",
+@@ -51,7 +52,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+     },
+     lib_source = ":all_srcs",
+diff --git a/bazel/thirdparty/modules/pnp4nagios/0.6.26.cmk.2/source.json b/bazel/thirdparty/modules/pnp4nagios/0.6.26.cmk.2/source.json
+index 9852ef79..14ea5d29 100644
+--- a/bazel/thirdparty/modules/pnp4nagios/0.6.26.cmk.2/source.json
++++ b/bazel/thirdparty/modules/pnp4nagios/0.6.26.cmk.2/source.json
+@@ -3,7 +3,7 @@
+   "strip_prefix": "pnp4nagios-0.6.26",
+   "url": "https://sourceforge.net/projects/pnp4nagios/files/PNP-0.6/pnp4nagios-0.6.26.tar.gz",
+   "overlay": {
+-    "BUILD.bazel": "sha256-OV9Qw6Z6yG7MUzZisAIb7p93wG+SLmG6akMNBh+Anrs=",
++    "BUILD.bazel": "sha256-lC2NKMvqVIB4ia7WeTPcjrUTfyw8aasDmQ+M27q8CWw=",
+     "MODULE.bazel": "sha256-pNAhLVQ3EfpRIx7jJrlZWPds44SKrbQLLHfbJTf23YI="
+   },
+   "patches": {
+diff --git a/bazel/thirdparty/modules/rrdtool/1.7.2.cmk.1/overlay/BUILD.bazel b/bazel/thirdparty/modules/rrdtool/1.7.2.cmk.1/overlay/BUILD.bazel
+index 3be1b558..dbac5fac 100644
+--- a/bazel/thirdparty/modules/rrdtool/1.7.2.cmk.1/overlay/BUILD.bazel
++++ b/bazel/thirdparty/modules/rrdtool/1.7.2.cmk.1/overlay/BUILD.bazel
+@@ -71,7 +71,7 @@ configure_make(
+             "-I/usr/include/uuid",
+             "-I/usr/lib64/glib-2.0",
+             "-I/usr/lib64/glib-2.0/include",
+-            "-I/usr/lib/x86_64-linux-gnu/glib-2.0/include",
++            "-I/usr/lib/aarch64-linux-gnu/glib-2.0/include",
+         ]) + "'",
+     ],
+     copts = [
+diff --git a/bazel/thirdparty/modules/rrdtool/1.7.2.cmk.1/source.json b/bazel/thirdparty/modules/rrdtool/1.7.2.cmk.1/source.json
+index ccf2c8c5..1feec6c2 100644
+--- a/bazel/thirdparty/modules/rrdtool/1.7.2.cmk.1/source.json
++++ b/bazel/thirdparty/modules/rrdtool/1.7.2.cmk.1/source.json
+@@ -9,7 +9,7 @@
+   },
+   "patch_strip": 1,
+   "overlay": {
+-    "BUILD.bazel": "sha256-GV/IX1YvrlQv7mqxtC1EuAbS0K31Q7B2ADdBfVWuIHw=",
++    "BUILD.bazel": "sha256-hphuIAeka2q40Wcdmw2hyjW18Mp3n+plUcQXs+W9VaM=",
+     "MODULE.bazel": "sha256-CkM/Is3xh1GMUjPIY67vlGnEX29Kd/3OuUKXaq+Zsvc="
+   }
+ }
+diff --git a/bazel/toolchains/cc/gcc/local/BUILD b/bazel/toolchains/cc/gcc/local/BUILD
+index 8ac182f9..44e8c140 100644
+--- a/bazel/toolchains/cc/gcc/local/BUILD
++++ b/bazel/toolchains/cc/gcc/local/BUILD
+@@ -142,3 +142,18 @@ filegroup(
+     }),
+     visibility = ["//visibility:public"],
+ )
++
++unix_cc_toolchain_config(
++ name="linux_aarch64_config", abi_libc_version="local", abi_version="local",
++ compile_flags=["-fstack-protector","-Wall","-Wunused-but-set-parameter","-Wno-free-nonheap-object","-fno-omit-frame-pointer"],
++ compiler="gcc", cpu="aarch64",
++ cxx_builtin_include_directories=["/usr/lib/gcc/aarch64-linux-gnu/14/include","/usr/lib/gcc/aarch64-linux-gnu/14/include-fixed","/usr/include/aarch64-linux-gnu","/usr/include"],
++ cxx_flags=["-std=c++20"], dbg_compile_flags=["-g"], host_system_name="local",
++ link_flags=["-Wl,-no-as-needed","-Wl,-z,relro,-z,now","-pass-exit-codes"], link_libs=["-lstdc++","-lm"],
++ opt_compile_flags=["-g0","-O2","-D_FORTIFY_SOURCE=1","-DNDEBUG","-ffunction-sections","-fdata-sections"], opt_link_flags=["-Wl,--gc-sections"],
++ target_libc="local", target_system_name="local",
++ tool_paths={"ar":"/usr/bin/gcc-ar-14","cpp":"/usr/bin/cpp-14","gcc":"/usr/bin/gcc-14","ld":"/usr/bin/ld","nm":"/usr/bin/gcc-nm-14","objdump":"/usr/bin/objdump","strip":"/usr/bin/strip","objcopy":"/usr/bin/objcopy"},
++ toolchain_identifier="linux_aarch64", unfiltered_compile_flags=["-Wno-builtin-macro-redefined","-fno-canonical-system-headers"],
++)
++cc_toolchain(name="linux_aarch64_toolchain", all_files=":empty", compiler_files=":empty", dwp_files=":empty", linker_files=":empty", objcopy_files=":empty", static_runtime_lib=":empty", strip_files=":empty", supports_param_files=0, toolchain_config=":linux_aarch64_config", toolchain_identifier="linux_aarch64")
++toolchain(name="linux_aarch64", exec_compatible_with=["@platforms//cpu:aarch64","@platforms//os:linux"], target_compatible_with=["@platforms//cpu:aarch64","@platforms//os:linux"], toolchain=":linux_aarch64_toolchain", toolchain_type="@bazel_tools//tools/cpp:toolchain_type")
+diff --git a/host.Cargo.lock.bazel b/host.Cargo.lock.bazel
+index 7eeb2f7f..b14993ef 100644
+--- a/host.Cargo.lock.bazel
++++ b/host.Cargo.lock.bazel
+@@ -1,5 +1,5 @@
+ {
+-  "checksum": "e2da0cf9cd0f84ebae1e90dbe29c714f650a38a5218418f7f4d9bd6cbf483d9a",
++  "checksum": "b811fc1bdf115f208b8507de8e62a4949912a5d278d8298899cea8f9fc71e604",
+   "crates": {
+     "addr2line 0.24.2": {
+       "name": "addr2line",
+@@ -2316,6 +2316,9 @@
+             ],
+             "x86_64-unknown-linux-gnu": [
+               "std"
++            ],
++            "x86_64-unknown-linux-musl": [
++              "std"
+             ]
+           }
+         },
+@@ -3163,6 +3166,12 @@
+                 "id": "iana-time-zone 0.1.63",
+                 "target": "iana_time_zone"
+               }
++            ],
++            "x86_64-unknown-linux-musl": [
++              {
++                "id": "iana-time-zone 0.1.63",
++                "target": "iana_time_zone"
++              }
+             ]
+           }
+         },
+@@ -12495,6 +12504,9 @@
+             ],
+             "x86_64-unknown-linux-gnu": [
+               "vendored"
++            ],
++            "x86_64-unknown-linux-musl": [
++              "vendored"
+             ]
+           }
+         },
+@@ -15077,6 +15089,9 @@
+             ],
+             "x86_64-unknown-linux-gnu": [
+               "vendored"
++            ],
++            "x86_64-unknown-linux-musl": [
++              "vendored"
+             ]
+           }
+         },
+@@ -15389,6 +15404,10 @@
+             "x86_64-unknown-linux-gnu": [
+               "openssl-src",
+               "vendored"
++            ],
++            "x86_64-unknown-linux-musl": [
++              "openssl-src",
++              "vendored"
+             ]
+           }
+         },
+@@ -15451,6 +15470,12 @@
+                 "id": "openssl-src 300.5.2+3.5.2",
+                 "target": "openssl_src"
+               }
++            ],
++            "x86_64-unknown-linux-musl": [
++              {
++                "id": "openssl-src 300.5.2+3.5.2",
++                "target": "openssl_src"
++              }
+             ]
+           }
+         },
+@@ -17925,6 +17950,12 @@
+                 "id": "libc 0.2.175",
+                 "target": "libc"
+               }
++            ],
++            "x86_64-unknown-linux-musl": [
++              {
++                "id": "libc 0.2.175",
++                "target": "libc"
++              }
+             ]
+           }
+         },
+@@ -19161,6 +19192,9 @@
+             ],
+             "x86_64-unknown-linux-gnu": [
+               "native-tls-vendored"
++            ],
++            "x86_64-unknown-linux-musl": [
++              "native-tls-vendored"
+             ]
+           }
+         },
+@@ -23881,6 +23915,16 @@
+                 "id": "signal-hook-registry 1.4.6",
+                 "target": "signal_hook_registry"
+               }
++            ],
++            "x86_64-unknown-linux-musl": [
++              {
++                "id": "libc 0.2.175",
++                "target": "libc"
++              },
++              {
++                "id": "signal-hook-registry 1.4.6",
++                "target": "signal_hook_registry"
++              }
+             ]
+           }
+         },
+@@ -31890,15 +31934,18 @@
+     "cfg(all(any(target_os = \"android\", target_os = \"linux\"), any(rustix_use_libc, miri, not(all(target_os = \"linux\", any(target_endian = \"little\", target_arch = \"s390x\"), any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"s390x\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\")))))))": [],
+     "cfg(all(any(target_os = \"linux\", target_os = \"android\"), not(any(all(target_os = \"linux\", target_env = \"\"), getrandom_backend = \"custom\", getrandom_backend = \"linux_raw\", getrandom_backend = \"rdrand\", getrandom_backend = \"rndr\"))))": [
+       "aarch64-unknown-linux-gnu",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(all(not(rustix_use_libc), not(miri), target_os = \"linux\", any(target_endian = \"little\", any(target_arch = \"s390x\", target_arch = \"powerpc\")), any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc\"), all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"s390x\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\"))))": [
+       "aarch64-unknown-linux-gnu",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(all(not(rustix_use_libc), not(miri), target_os = \"linux\", any(target_endian = \"little\", target_arch = \"s390x\"), any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"s390x\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\"))))": [
+       "aarch64-unknown-linux-gnu",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(all(not(windows), any(rustix_use_libc, miri, not(all(target_os = \"linux\", any(target_endian = \"little\", any(target_arch = \"s390x\", target_arch = \"powerpc\")), any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc\"), all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"s390x\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\")))))))": [],
+     "cfg(all(not(windows), any(rustix_use_libc, miri, not(all(target_os = \"linux\", any(target_endian = \"little\", target_arch = \"s390x\"), any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"s390x\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\")))))))": [],
+@@ -31926,21 +31973,25 @@
+     "cfg(all(tokio_uring, target_os = \"linux\"))": [],
+     "cfg(all(unix, not(any(target_os = \"redox\", target_family = \"wasm\", target_os = \"android\", target_os = \"ios\", target_os = \"macos\"))))": [
+       "aarch64-unknown-linux-gnu",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(all(unix, not(target_os = \"macos\")))": [
+       "aarch64-unknown-linux-gnu",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(any())": [],
+     "cfg(any(target_arch = \"aarch64\", target_arch = \"x86_64\", target_arch = \"x86\"))": [
+       "aarch64-unknown-linux-gnu",
+       "x86_64-pc-windows-msvc",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(any(target_arch = \"x86_64\", target_arch = \"x86\"))": [
+       "x86_64-pc-windows-msvc",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(any(target_os = \"dragonfly\", target_os = \"freebsd\", target_os = \"hurd\", target_os = \"illumos\", target_os = \"cygwin\", all(target_os = \"horizon\", target_arch = \"arm\")))": [],
+     "cfg(any(target_os = \"haiku\", target_os = \"redox\", target_os = \"nto\", target_os = \"aix\"))": [],
+@@ -31949,11 +32000,13 @@
+     "cfg(any(target_os = \"macos\", target_os = \"openbsd\", target_os = \"vita\", target_os = \"emscripten\"))": [],
+     "cfg(any(unix, target_os = \"fuchsia\", target_os = \"vxworks\"))": [
+       "aarch64-unknown-linux-gnu",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(any(unix, target_os = \"wasi\"))": [
+       "aarch64-unknown-linux-gnu",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(any(windows, target_os = \"cygwin\"))": [
+       "x86_64-pc-windows-msvc"
+@@ -31961,39 +32014,47 @@
+     "cfg(not(all(target_arch = \"arm\", target_os = \"none\")))": [
+       "aarch64-unknown-linux-gnu",
+       "x86_64-pc-windows-msvc",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(not(all(target_family = \"wasm\", target_os = \"unknown\")))": [
+       "aarch64-unknown-linux-gnu",
+       "x86_64-pc-windows-msvc",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(not(all(windows, target_env = \"msvc\", not(target_vendor = \"uwp\"))))": [
+       "aarch64-unknown-linux-gnu",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(not(any(target_os = \"windows\", target_vendor = \"apple\")))": [
+       "aarch64-unknown-linux-gnu",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(not(target_arch = \"wasm32\"))": [
+       "aarch64-unknown-linux-gnu",
+       "x86_64-pc-windows-msvc",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(not(target_os = \"emscripten\"))": [
+       "aarch64-unknown-linux-gnu",
+       "x86_64-pc-windows-msvc",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(not(windows))": [
+       "aarch64-unknown-linux-gnu",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(not(windows_raw_dylib))": [
+       "aarch64-unknown-linux-gnu",
+       "x86_64-pc-windows-msvc",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(target_arch = \"wasm32\")": [],
+     "cfg(target_family = \"wasm\")": [],
+@@ -32016,7 +32077,8 @@
+     "cfg(tokio_taskdump)": [],
+     "cfg(unix)": [
+       "aarch64-unknown-linux-gnu",
+-      "x86_64-unknown-linux-gnu"
++      "x86_64-unknown-linux-gnu",
++      "x86_64-unknown-linux-musl"
+     ],
+     "cfg(windows)": [
+       "x86_64-pc-windows-msvc"
+@@ -32035,6 +32097,9 @@
+     "x86_64-unknown-linux-gnu": [
+       "x86_64-unknown-linux-gnu"
+     ],
++    "x86_64-unknown-linux-musl": [
++      "x86_64-unknown-linux-musl"
++    ],
+     "x86_64-uwp-windows-gnu": [],
+     "x86_64-uwp-windows-msvc": []
+   },
+diff --git a/omd/BUILD b/omd/BUILD
+index e3367c08..3780ee0a 100644
+--- a/omd/BUILD
++++ b/omd/BUILD
+@@ -572,7 +572,7 @@ pkg_files(
+ 
+ [pkg_name_info(
+     name = "cmk_pkg_variables_" + edition,
+-    architecture = "amd64",
++    architecture = "arm64",
+     cmk_version = "@cmk//version",
+     package = "check-mk-" + edition,
+     tags = ["manual"],
+@@ -611,13 +611,13 @@ pkg_files(
+ 
+ [pkg_deb(
+     name = "deb_" + edition,
+-    architecture = "amd64",
++    architecture = "arm64",
+     config = "//omd/debian:config",
+     data = "complete_install_compressed_" + edition,
+     depends_file = "//omd/distros:dependencies",
+     description = "Checkmk - Best-in-class infrastructure & application monitoring",
+     homepage = "https://checkmk.com",
+-    maintainer = "Checkmk team <feedback@checkmk.com>",
++    maintainer = "sergiodadi <sergiodadi@nojo.fr>",
+     md5sums = ":md5sums_" + edition,
+     package = "{package}-{cmk_version}",
+     package_file_name = "{package}-{cmk_version}_{version}_{architecture}.deb",
+diff --git a/omd/debian/postinst.in b/omd/debian/postinst.in
+index 3ffbf17f..9db9b8a7 100755
+--- a/omd/debian/postinst.in
++++ b/omd/debian/postinst.in
+@@ -94,6 +94,7 @@ case "$1" in
+     # Remember to adopt tests/system/singlesite/omd/test_python.py:test_python_is_bytecode_compiled
+     # in case you modify exclusions!
+     echo "pre-compile bytecode (.pyc) for Python files.."
++    LD_LIBRARY_PATH="${BASE_PATH}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+     "${BASE_PATH}/bin/python3" -m compileall \
+         -x "check_mk/agents/plugins|/skel/" \
+         -s "${BASE_PATH}" \
+diff --git a/omd/omd.spec.in b/omd/omd.spec.in
+index 4cd3f141..dab690a4 100644
+--- a/omd/omd.spec.in
++++ b/omd/omd.spec.in
+@@ -147,6 +147,7 @@ BASE_PATH="/omd/versions/%{version}"
+ # Remember to adopt tests/system/singlesite/omd/test_python.py:test_python_is_bytecode_compiled
+ # in case you modify exclusions!
+ echo "pre-compile bytecode (.pyc) for Python files.."
++LD_LIBRARY_PATH="${BASE_PATH}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+ "${BASE_PATH}/bin/python3" -m compileall \
+     -x "check_mk/agents/plugins|/skel/" \
+     -s "${BASE_PATH}" \
+diff --git a/omd/packages/Python/BUILD b/omd/packages/Python/BUILD
+index e72fb76e..1dfa349f 100644
+--- a/omd/packages/Python/BUILD
++++ b/omd/packages/Python/BUILD
+@@ -241,7 +241,7 @@ copy_to_directory(
+ string_replace(
+     name = "python_rest_with_version",
+     src = ":python_rest",
+-    filepattern = ["_sysconfigdata__linux_x86_64-linux-gnu.py"],
++    filepattern = ["_sysconfigdata__linux_aarch64-linux-gnu.py"],
+     replace_labels = {
+         "cmk_version": "@cmk//version",
+         "cmk_edition": "@cmk//edition",
+diff --git a/omd/packages/Python/BUILD.Python.bazel b/omd/packages/Python/BUILD.Python.bazel
+index a07264a3..cf04945e 100644
+--- a/omd/packages/Python/BUILD.Python.bazel
++++ b/omd/packages/Python/BUILD.Python.bazel
+@@ -60,6 +60,7 @@ configure_make(
+         "CFLAGS='-Dredacted=\"redacted\"'",
+         "--enable-optimizations",
+         "--enable-shared",
++        "--enable-loadable-sqlite-extensions",
+         "--with-lto",
+         "--without-static-libpython",
+         # Bake a stable prefix into the binaries instead of the bazel sandbox
+@@ -77,7 +78,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+     },
+ 
+@@ -96,7 +97,7 @@ configure_make(
+     postfix_script = """
+         py_install_dir="$$BUILD_TMPDIR/{installPrefix}";
+         bin_dir="$$INSTALLDIR/bin";
+-        sysconfig_path="$$INSTALLDIR/lib/python{pyMajMin}/_sysconfigdata__linux_x86_64-linux-gnu.py"
++        sysconfig_path="$$INSTALLDIR/lib/python{pyMajMin}/_sysconfigdata__linux_aarch64-linux-gnu.py"
+         # omd_prefix must be fixed-up to the corresponding omd path (e.g. /omd/versions/2.2.0p2.cee)
+         omd_prefix="/replace-me"
+ 
+diff --git a/omd/packages/freetds/BUILD.freetds.bazel b/omd/packages/freetds/BUILD.freetds.bazel
+index eff8b3eb..92ba6c52 100644
+--- a/omd/packages/freetds/BUILD.freetds.bazel
++++ b/omd/packages/freetds/BUILD.freetds.bazel
+@@ -30,7 +30,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+     },
+     lib_source = ":all_srcs",
+diff --git a/omd/packages/jaeger/BUILD b/omd/packages/jaeger/BUILD
+index 5f0057be..04ab04a5 100644
+--- a/omd/packages/jaeger/BUILD
++++ b/omd/packages/jaeger/BUILD
+@@ -8,7 +8,7 @@ exports_files(["skel.permissions"])
+ genrule(
+     name = "fetch_package",
+     srcs = ["@jaeger//file"],
+-    outs = ["jaeger-" + JAEGER_VERSION + "-linux-amd64.tar.gz"],
++    outs = ["jaeger-" + JAEGER_VERSION + "-linux-arm64.tar.gz"],
+     cmd = """
+         cp $(SRCS) $(OUTS)
+     """,
+@@ -21,11 +21,11 @@ genrule(
+     outs = ["jaeger"],
+     cmd = """
+         target_path=$$(realpath $(RULEDIR)) ;\
+-	tar -xz \
++	tar -xz --no-same-owner \
+ 	    --strip-components=1 \
+ 	    -C $${target_path} \
+ 	    -f $(SRCS) \
+-	    jaeger-%s-linux-amd64/jaeger
++	    jaeger-%s-linux-arm64/jaeger
+         strip -s $@ -o $@.tmp
+         mv $@.tmp $@
+     """ % JAEGER_VERSION,
+diff --git a/omd/packages/lcab/BUILD.lcab.bazel b/omd/packages/lcab/BUILD.lcab.bazel
+index b528db1b..0c707408 100644
+--- a/omd/packages/lcab/BUILD.lcab.bazel
++++ b/omd/packages/lcab/BUILD.lcab.bazel
+@@ -15,7 +15,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+         "DESTDIR": "/",
+     },
+diff --git a/omd/packages/mod_wsgi/BUILD b/omd/packages/mod_wsgi/BUILD
+index c826c3c4..28912d68 100644
+--- a/omd/packages/mod_wsgi/BUILD
++++ b/omd/packages/mod_wsgi/BUILD
+@@ -19,7 +19,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+     },
+     lib_source = "@mod_wsgi//:all_srcs",
+diff --git a/omd/packages/monitoring-plugins/BUILD.monitoring-plugins.bazel b/omd/packages/monitoring-plugins/BUILD.monitoring-plugins.bazel
+index e6fc576f..91e659f8 100644
+--- a/omd/packages/monitoring-plugins/BUILD.monitoring-plugins.bazel
++++ b/omd/packages/monitoring-plugins/BUILD.monitoring-plugins.bazel
+@@ -63,7 +63,7 @@ ENV = {
+     "PKG_CONFIG_PATH": ":".join([
+         "/usr/lib/pkgconfig",
+         "/usr/lib64/pkgconfig",
+-        "/usr/lib/x86_64-linux-gnu/pkgconfig",
++        "/usr/lib/aarch64-linux-gnu/pkgconfig",
+     ]),
+ }
+ 
+diff --git a/omd/packages/net-snmp/BUILD.net-snmp.bazel b/omd/packages/net-snmp/BUILD.net-snmp.bazel
+index bde60deb..184cfcf8 100644
+--- a/omd/packages/net-snmp/BUILD.net-snmp.bazel
++++ b/omd/packages/net-snmp/BUILD.net-snmp.bazel
+@@ -87,8 +87,10 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
++        "AUTOHEADER": ":",
++        "NOAUTODEPS": "1",
+         "RANLIB": "ranlib",
+         "SETUPTOOLS_TAR": "$(execpath @@//omd/packages/python3-modules:compiled_setuptools.tar)",
+         "PYTHONPATH": "$$(dirname $(execpath @@//omd/packages/python3-modules:compiled_setuptools.tar))/lib/python%s/site-packages/" % PYTHON_MAJOR_DOT_MINOR,
+@@ -169,11 +171,17 @@ configure_make(
+                 --single-version-externally-managed
+         cd -
+         echo "Build perl"
+-            make -C perl DESTDIR=$${INSTALLDIR}/ \
+-                INSTALLSITEARCH=/lib/perl5/lib/perl5 \
+-                INSTALLSITEMAN3DIR=/share/man/man3 \
+-                INSTALLARCHLIB=/lib/perl5/lib/perl5/x86_64-linux-gnu-thread-multi \
+-                install
++        PERL_ROOT=$${BUILD_TMPDIR}/net-snmp-perl-src
++        cp -a $${EXT_BUILD_ROOT}/external/+_repo_rules+net-snmp/. $${PERL_ROOT}
++        PERL_SOURCE=$${PERL_ROOT}/perl
++        (cd $${PERL_SOURCE} && PERL5LIB=$${PERL_SOURCE} perl Makefile.PL \
++            -NET-SNMP-IN-SOURCE=true \
++            -NET-SNMP-CONFIG="sh $${BUILD_TMPDIR}/net-snmp-config")
++        make -C $${PERL_SOURCE} DESTDIR=$${INSTALLDIR}/ \
++            INSTALLSITEARCH=/lib/perl5/lib/perl5 \
++            INSTALLSITEMAN3DIR=/share/man/man3 \
++            INSTALLARCHLIB=/lib/perl5/lib/perl5/aarch64-linux-gnu-thread-multi \
++            install
+ 
+         chmod u+w -R $${INSTALLDIR}
+         chmod 644 $${INSTALLDIR}/share/snmp/mibs/*
+diff --git a/omd/packages/openssl/BUILD b/omd/packages/openssl/BUILD
+index 037d1861..5810c2c9 100644
+--- a/omd/packages/openssl/BUILD
++++ b/omd/packages/openssl/BUILD
+@@ -113,7 +113,7 @@ binreplace_version_from_flag(
+     src = ":lib/libcrypto.so.3",
+     # File has to be called .replaced because this produce in this format by binreplace
+     out = "lib/libcrypto.so.3.replaced",
+-    reg_ex = r"/(?:home|root)/.*?/openssl\.build_tmpdir/openssl/",
++    reg_ex = r"/.*?/openssl\.build_tmpdir/openssl/",
+     replace_labels = {
+         "version": "@cmk//version",
+         "edition": "@cmk//edition",
+diff --git a/omd/packages/snap7/snap7_repository.bzl b/omd/packages/snap7/snap7_repository.bzl
+index 436e1929..a392a7b2 100644
+--- a/omd/packages/snap7/snap7_repository.bzl
++++ b/omd/packages/snap7/snap7_repository.bzl
+@@ -19,7 +19,8 @@ def _get_7zip_url():
+     return "https://www.7-zip.org/a/7z{}-linux-x64.{}".format(version_no_dot, _SEVEN_ZIP_ARCHIVE_TYPE)
+ 
+ def _download_7zip(repository_ctx):
+-    """Download and extract 7zip binary from official source."""
++    """Use the host-native 7z executable for this ARM64 build."""
++    return repository_ctx.path("/usr/bin/7z")
+     url = _get_7zip_url()
+     result = repository_ctx.download_and_extract(
+         url = url,
+diff --git a/omd/packages/stunnel/BUILD.stunnel.bazel b/omd/packages/stunnel/BUILD.stunnel.bazel
+index 6ad7e84b..8fc14a05 100644
+--- a/omd/packages/stunnel/BUILD.stunnel.bazel
++++ b/omd/packages/stunnel/BUILD.stunnel.bazel
+@@ -59,7 +59,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+         "ORIGIN_VAR": "\\\\$$\\$$ORIGIN",
+     },
+diff --git a/omd/packages/xinetd/BUILD.xinetd.bazel b/omd/packages/xinetd/BUILD.xinetd.bazel
+index 379e14b0..96f77591 100644
+--- a/omd/packages/xinetd/BUILD.xinetd.bazel
++++ b/omd/packages/xinetd/BUILD.xinetd.bazel
+@@ -20,7 +20,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+         "ORIGIN_VAR": "\\\\$$\\$$ORIGIN",
+     },
+diff --git a/omd/packages/xmlsec1/BUILD b/omd/packages/xmlsec1/BUILD
+index 2d336f63..dd90a3c7 100644
+--- a/omd/packages/xmlsec1/BUILD
++++ b/omd/packages/xmlsec1/BUILD
+@@ -39,6 +39,8 @@ set_runpath(
+ )
+ 
+ # Required libraries
++config_setting(name = "aarch64", constraint_values = ["@platforms//cpu:aarch64"])
++
+ libs = [
+     "libxmlsec1-openssl.so.1.3.8",
+     "libxmlsec1.so.1.3.8",
+@@ -149,6 +151,7 @@ filter_directory(
+     ] + select({
+         "@cmk//distro:almalinux": [],
+         "@cmk//distro:sles": _gnutls_rest_paths,
++        ":aarch64": _gnutls_rest_paths,
+         "//conditions:default": _all_optional_rest_paths,
+     }),
+     tags = ["manual"],
+@@ -181,6 +184,7 @@ pkg_files(
+     srcs = select({
+         "@cmk//distro:almalinux": [],
+         "@cmk//distro:sles": [":xmlsec1_deployable_lib_gnutls"],
++        ":aarch64": [":xmlsec1_deployable_lib_gnutls"],
+         "//conditions:default": [":xmlsec1_deployable_lib_%s" % name for name in optional_libs],
+     }),
+     prefix = "lib",
+@@ -192,6 +196,7 @@ pkg_filegroup(
+     srcs = [":xmlsec1_optional_lib_files"] + select({
+         "@cmk//distro:almalinux": [],
+         "@cmk//distro:sles": _gnutls_symlink_targets,
++        ":aarch64": _gnutls_symlink_targets,
+         "//conditions:default": _all_optional_symlink_targets,
+     }),
+     tags = ["manual"],
+diff --git a/omd/packages/xmlsec1/BUILD.xmlsec1.bazel b/omd/packages/xmlsec1/BUILD.xmlsec1.bazel
+index 7447c73f..5152c9ba 100644
+--- a/omd/packages/xmlsec1/BUILD.xmlsec1.bazel
++++ b/omd/packages/xmlsec1/BUILD.xmlsec1.bazel
+@@ -12,6 +12,7 @@ configure_make(
+     configure_in_place = True,
+     configure_options = [
+         "--with-openssl=$$EXT_BUILD_DEPS/openssl",
++        "--with-gnutls",
+         "--disable-mans",
+         "--disable-docs",
+     ],
+@@ -26,7 +27,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+         "ORIGIN_VAR": "\\\\$$\\$$ORIGIN",
+     },
+diff --git a/packages/cmk-agent-ctl/BUILD b/packages/cmk-agent-ctl/BUILD
+index 4e3c83b4..97413556 100644
+--- a/packages/cmk-agent-ctl/BUILD
++++ b/packages/cmk-agent-ctl/BUILD
+@@ -225,7 +225,7 @@ rust_binary(
+     crate_name = "cmk_agent_ctl",
+     edition = "2021",
+     opt = True,
+-    platform = "//bazel/platforms:aarch64-linux-musl",
++    platform = "@platforms//host",
+     proc_macro_deps = all_crate_deps(
+         proc_macro = True,
+     ),
+diff --git a/site.Cargo.lock.bazel b/site.Cargo.lock.bazel
+index 7cece9a7..889f6edf 100644
+--- a/site.Cargo.lock.bazel
++++ b/site.Cargo.lock.bazel
+@@ -1,5 +1,5 @@
+ {
+-  "checksum": "4ed5701d43339e2ab95782763dfc88714d73093843e715b5f96e2f4e9cd1bb46",
++  "checksum": "2926b8c83ff14991925e21ca2992ca2e454d42558f63c102951cfaf6fd38c405",
+   "crates": {
+     "addr2line 0.24.2": {
+       "name": "addr2line",
+@@ -31470,27 +31470,34 @@
+     "aarch64-linux-android": [],
+     "aarch64-pc-windows-gnullvm": [],
+     "aarch64-pc-windows-msvc": [],
++    "aarch64-unknown-linux-gnu": [
++      "aarch64-unknown-linux-gnu"
++    ],
+     "aarch64-uwp-windows-msvc": [],
+     "cfg(all(all(target_arch = \"aarch64\", target_endian = \"little\"), target_os = \"windows\"))": [],
+     "cfg(all(all(target_arch = \"aarch64\", target_endian = \"little\"), target_vendor = \"apple\", any(target_os = \"ios\", target_os = \"macos\", target_os = \"tvos\", target_os = \"visionos\", target_os = \"watchos\")))": [],
+-    "cfg(all(any(all(target_arch = \"aarch64\", target_endian = \"little\"), all(target_arch = \"arm\", target_endian = \"little\")), any(target_os = \"android\", target_os = \"linux\")))": [],
++    "cfg(all(any(all(target_arch = \"aarch64\", target_endian = \"little\"), all(target_arch = \"arm\", target_endian = \"little\")), any(target_os = \"android\", target_os = \"linux\")))": [
++      "aarch64-unknown-linux-gnu"
++    ],
+     "cfg(all(any(target_arch = \"x86_64\", target_arch = \"arm64ec\"), target_env = \"msvc\", not(windows_raw_dylib)))": [],
+     "cfg(all(any(target_os = \"android\", target_os = \"linux\"), any(rustix_use_libc, miri, not(all(target_os = \"linux\", any(target_endian = \"little\", any(target_arch = \"s390x\", target_arch = \"powerpc\")), any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc\"), all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"s390x\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\")))))))": [],
+     "cfg(all(any(target_os = \"android\", target_os = \"linux\"), any(rustix_use_libc, miri, not(all(target_os = \"linux\", any(target_endian = \"little\", target_arch = \"s390x\"), any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"s390x\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\")))))))": [],
+     "cfg(all(any(target_os = \"linux\", target_os = \"android\"), not(any(all(target_os = \"linux\", target_env = \"\"), getrandom_backend = \"custom\", getrandom_backend = \"linux_raw\", getrandom_backend = \"rdrand\", getrandom_backend = \"rndr\"))))": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
+     "cfg(all(not(rustix_use_libc), not(miri), target_os = \"linux\", any(target_endian = \"little\", any(target_arch = \"s390x\", target_arch = \"powerpc\")), any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc\"), all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"s390x\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\"))))": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
+     "cfg(all(not(rustix_use_libc), not(miri), target_os = \"linux\", any(target_endian = \"little\", target_arch = \"s390x\"), any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"s390x\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\"))))": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
+     "cfg(all(not(windows), any(rustix_use_libc, miri, not(all(target_os = \"linux\", any(target_endian = \"little\", any(target_arch = \"s390x\", target_arch = \"powerpc\")), any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc\"), all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"s390x\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\")))))))": [],
+     "cfg(all(not(windows), any(rustix_use_libc, miri, not(all(target_os = \"linux\", any(target_endian = \"little\", target_arch = \"s390x\"), any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"s390x\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\")))))))": [],
+     "cfg(all(target_arch = \"aarch64\", target_env = \"msvc\", not(windows_raw_dylib)))": [],
+     "cfg(all(target_arch = \"aarch64\", target_os = \"android\"))": [],
+-    "cfg(all(target_arch = \"aarch64\", target_os = \"linux\"))": [],
++    "cfg(all(target_arch = \"aarch64\", target_os = \"linux\"))": [
++      "aarch64-unknown-linux-gnu"
++    ],
+     "cfg(all(target_arch = \"aarch64\", target_vendor = \"apple\"))": [],
+     "cfg(all(target_arch = \"loongarch64\", target_os = \"linux\"))": [],
+     "cfg(all(target_arch = \"wasm32\", target_os = \"unknown\"))": [],
+@@ -31498,62 +31505,58 @@
+     "cfg(all(target_arch = \"x86\", target_env = \"gnu\", not(target_abi = \"llvm\"), not(windows_raw_dylib)))": [],
+     "cfg(all(target_arch = \"x86\", target_env = \"gnu\", not(windows_raw_dylib)))": [],
+     "cfg(all(target_arch = \"x86\", target_env = \"msvc\", not(windows_raw_dylib)))": [],
+-    "cfg(all(target_arch = \"x86_64\", target_env = \"gnu\", not(target_abi = \"llvm\"), not(windows_raw_dylib)))": [
+-      "x86_64-unknown-linux-gnu"
+-    ],
++    "cfg(all(target_arch = \"x86_64\", target_env = \"gnu\", not(target_abi = \"llvm\"), not(windows_raw_dylib)))": [],
+     "cfg(all(target_arch = \"x86_64\", target_env = \"msvc\", not(windows_raw_dylib)))": [],
+     "cfg(all(target_family = \"wasm\", target_feature = \"atomics\"))": [],
+     "cfg(all(target_family = \"wasm\", target_os = \"unknown\"))": [],
+     "cfg(all(target_os = \"uefi\", getrandom_backend = \"efi_rng\"))": [],
+     "cfg(all(tokio_uring, target_os = \"linux\"))": [],
+     "cfg(all(unix, not(any(target_os = \"redox\", target_family = \"wasm\", target_os = \"android\", target_os = \"ios\", target_os = \"macos\"))))": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
+     "cfg(all(unix, not(target_os = \"macos\")))": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
+     "cfg(any())": [],
+     "cfg(any(target_arch = \"aarch64\", target_arch = \"x86_64\", target_arch = \"x86\"))": [
+-      "x86_64-unknown-linux-gnu"
+-    ],
+-    "cfg(any(target_arch = \"x86_64\", target_arch = \"x86\"))": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
++    "cfg(any(target_arch = \"x86_64\", target_arch = \"x86\"))": [],
+     "cfg(any(target_os = \"dragonfly\", target_os = \"freebsd\", target_os = \"hurd\", target_os = \"illumos\", target_os = \"cygwin\", all(target_os = \"horizon\", target_arch = \"arm\")))": [],
+     "cfg(any(target_os = \"haiku\", target_os = \"redox\", target_os = \"nto\", target_os = \"aix\"))": [],
+     "cfg(any(target_os = \"ios\", target_os = \"macos\"))": [],
+     "cfg(any(target_os = \"ios\", target_os = \"visionos\", target_os = \"watchos\", target_os = \"tvos\"))": [],
+     "cfg(any(target_os = \"macos\", target_os = \"openbsd\", target_os = \"vita\", target_os = \"emscripten\"))": [],
+     "cfg(any(unix, target_os = \"fuchsia\", target_os = \"vxworks\"))": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
+     "cfg(any(unix, target_os = \"wasi\"))": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
+     "cfg(any(windows, target_os = \"cygwin\"))": [],
+     "cfg(not(all(target_arch = \"arm\", target_os = \"none\")))": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
+     "cfg(not(all(target_family = \"wasm\", target_os = \"unknown\")))": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
+     "cfg(not(all(windows, target_env = \"msvc\", not(target_vendor = \"uwp\"))))": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
+     "cfg(not(any(target_os = \"windows\", target_vendor = \"apple\")))": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
+     "cfg(not(target_arch = \"wasm32\"))": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
+     "cfg(not(target_os = \"emscripten\"))": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
+     "cfg(not(windows))": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
+     "cfg(not(windows_raw_dylib))": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
+     "cfg(target_arch = \"wasm32\")": [],
+     "cfg(target_family = \"wasm\")": [],
+@@ -31573,7 +31576,7 @@
+     "cfg(target_vendor = \"apple\")": [],
+     "cfg(tokio_taskdump)": [],
+     "cfg(unix)": [
+-      "x86_64-unknown-linux-gnu"
++      "aarch64-unknown-linux-gnu"
+     ],
+     "cfg(windows)": [],
+     "cfg(windows_raw_dylib)": [],
+@@ -31585,9 +31588,6 @@
+     "x86_64-pc-windows-gnu": [],
+     "x86_64-pc-windows-gnullvm": [],
+     "x86_64-pc-windows-msvc": [],
+-    "x86_64-unknown-linux-gnu": [
+-      "x86_64-unknown-linux-gnu"
+-    ],
+     "x86_64-uwp-windows-gnu": [],
+     "x86_64-uwp-windows-msvc": []
+   },
