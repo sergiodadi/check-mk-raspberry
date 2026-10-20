@@ -61,6 +61,8 @@ sudo ./build/build-checkmk.sh 2.5.0p16 trixie /srv/checkmk-build
 
 All steps, requirements, options and tests are explained in **[BUILD.md](BUILD.md)**.
 
+To build **Checkmk 2.4 Raw** for Debian 13 trixie, use `build/build-checkmk-2.4.sh` (see [BUILD.md, section 9](BUILD.md#9-checkmk-24-raw-for-debian-13-trixie)).
+
 ## Sources
 
 - Official Checkmk sources: https://github.com/Checkmk/checkmk

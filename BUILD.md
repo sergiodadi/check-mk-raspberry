@@ -167,6 +167,32 @@ the changed files must be adapted by hand. New patches will be published here wi
 and the components that did not change are reused, so a newer version should build faster than the first one (not measured yet).
 Before building, the script checks that the sources really are those of the requested version.
 
+## 9. Checkmk 2.4 Raw for Debian 13 trixie
+
+Checkmk 2.4 is packaged differently from 2.5 (Bazel builds the components, then `make deb` assembles the package), so it
+has its own script and patch:
+
+| File | Role |
+|---|---|
+| [`build/build-checkmk-2.4.sh`](build/build-checkmk-2.4.sh) | Prepares everything and builds the 2.4 Raw package for `trixie` |
+| [`build/checkmk-2.4.0p37-arm64.patch`](build/checkmk-2.4.0p37-arm64.patch) | Changes needed to build Checkmk 2.4.0p37 on ARM64 |
+
+```
+sudo apt install mmdebstrap git curl
+git clone https://github.com/sergiodadi/check-mk-raspberry.git && cd check-mk-raspberry
+sudo ./build/build-checkmk-2.4.sh 2.4.0p37 trixie /srv/checkmk24-build
+sudo ./build/test-install.sh trixie /srv/checkmk24-build/output/check-mk-raw-2.4.0p37_0.trixie_arm64.deb
+```
+
+The script works like `build-checkmk.sh` (clean build system made with mmdebstrap, every step skipped if already done,
+`JOBS` and `MAINTAINER` variables): all the details are in its header. It also downloads and checks (SHA-256) the tools
+that Checkmk 2.4 expects (bazelisk, Rust, Node.js 22) and Snap7, and takes the prebuilt agent files from the official
+2.4.0p37 package, like for 2.5. For Debian 12 bookworm, use the published 2.4.0p37 bookworm package.
+
+**Status:** the published `check-mk-raw-2.4.0p37_0.trixie_arm64.deb` was built on 19-20 October 2026 with exactly these
+steps and fixes. This script puts them together in a standalone form; it has been checked step by step, but a complete run
+from an empty work directory has not been done yet. If you meet a problem, please open an issue.
+
 ## Credits
 
 Built from the official [Checkmk](https://checkmk.com) sources (GNU GPL v2). The ARM64 adaptation and these scripts

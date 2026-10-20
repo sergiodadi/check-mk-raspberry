@@ -1,0 +1,1181 @@
+diff --git a/.bazelrc b/.bazelrc
+index c2aa8876..63039acf 100644
+--- a/.bazelrc
++++ b/.bazelrc
+@@ -32,7 +32,7 @@ common --@//:filesystem_layout=lsb
+ common --enable_bzlmod
+ # Do not upload artifacts other than from CI, see below, CMK-18656
+ common --remote_upload_local_results=false
+-common --lockfile_mode=error
++common --lockfile_mode=update
+ common --test_summary=detailed
+ 
+ ## For specific commands
+@@ -53,7 +53,7 @@ clean --async
+ test --test_output=all
+ 
+ # Try with our proxy first and fall back to public proxy when fetching go modules.
+-common --repo_env=GOPROXY="https://bazel-registry.lan.checkmk.net/proxy.golang.org/|https://proxy.golang.org|direct"
++common --repo_env=GOPROXY="https://proxy.golang.org|direct"
+ 
+ # Flags for CI builds
+ # Definition of "bazel x --config=ci -- ..."
+diff --git a/MODULE.bazel b/MODULE.bazel
+index a6a121c9..3a53115c 100644
+--- a/MODULE.bazel
++++ b/MODULE.bazel
+@@ -44,14 +44,15 @@ UPSTREAM_MIRROR_URL = "https://artifacts.lan.tribe29.com/repository/upstream-arc
+ 
+ python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+ python.single_version_platform_override(
+-    platform = "x86_64-unknown-linux-gnu",
++    platform = "aarch64-unknown-linux-gnu",
+     python_version = "3.12.11",
+-    sha256 = "9cd19efa875ae61d358b5dfeebc72035dd6fd11870943869394d2d7534675e28",
++    sha256 = "d6543614e5d9b2a51183ce8753a32edb7763c4d514c44f867c58e61332e98254",
+     urls = [
+-        "https://github.com/astral-sh/python-build-standalone/releases/download/20250604/cpython-3.12.11+20250604-x86_64-unknown-linux-gnu-install_only.tar.gz",
++        "https://github.com/astral-sh/python-build-standalone/releases/download/20250604/cpython-3.12.11+20250604-aarch64-unknown-linux-gnu-install_only.tar.gz",
+     ],
+ )
+ python.toolchain(
++    ignore_root_user_error = True,
+     is_default = True,
+     python_version = "3.12.11",
+ )
+@@ -149,7 +150,6 @@ http_archive(
+     strip_prefix = "patch-" + PATCH_VERSION,
+     urls = [
+         "https://ftpmirror.gnu.org/gnu/patch/" + PATCH_FILENAME,
+-        UPSTREAM_MIRROR_URL + PATCH_FILENAME,
+     ],
+ )
+ 
+@@ -168,7 +168,6 @@ exports_files([
+     strip_prefix = "shellcheck-" + SHELLCHECK_VERSION,
+     urls = [
+         "https://github.com/koalaman/shellcheck/releases/download/" + SHELLCHECK_VERSION + "/shellcheck-" + SHELLCHECK_VERSION + ".linux.x86_64.tar.xz",
+-        UPSTREAM_MIRROR_URL + "/shellcheck-" + SHELLCHECK_VERSION + ".linux.x86_64.tar.xz",
+     ],
+ )
+ 
+@@ -180,7 +179,6 @@ http_file(
+     sha256 = "1f57a384d59542f8fac5f503da1f3ea44242f46dff969569e80b524d64b71dbc",
+     urls = [
+         "https://github.com/mvdan/sh/releases/download/" + SHFMT_VERSION + "/shfmt_" + SHFMT_VERSION + "_linux_amd64",
+-        UPSTREAM_MIRROR_URL + "/shfmt_" + SHFMT_VERSION + "_linux_amd64",
+     ],
+ )
+ 
+@@ -191,7 +189,6 @@ http_file(
+     sha256 = "0cf7e0fbeb299e62cecd5b648d820a103decf2ed2d42a3aac4d6f6c930e88125",
+     urls = [
+         "https://github.com/tamasfe/taplo/releases/download/" + TAPLO_VERSION + "/taplo-full-linux-x86.gz",
+-        UPSTREAM_MIRROR_URL + "/taplo-full-linux-x86-" + TAPLO_VERSION + ".gz",
+     ],
+ )
+ 
+diff --git a/Makefile b/Makefile
+index 7300237e..604576de 100644
+--- a/Makefile
++++ b/Makefile
+@@ -11,6 +11,7 @@ TAROPTS            := --owner=root --group=root --exclude=.svn --exclude=*~ \
+                       --exclude=.gitignore --exclude=*.swp --exclude=.f12 \
+                       --exclude=__pycache__ --exclude=*.pyc
+ UVENV              := scripts/run-uvenv
++BAZEL              ?= /usr/local/bin/bazel
+ 
+ PY_PATH := .venv/bin/python
+ ifneq ("$(wildcard $(PY_PATH))","")
+@@ -251,16 +252,16 @@ relock_venv:
+ 	    filename=requirements_$${type}_lock.txt; \
+ 	    > $${filename}; \
+ 	done
+-	bazel mod deps --lockfile_mode=update > /dev/null
+-	bazel run //:requirements_runtime.update > /dev/null
+-	bazel mod deps --lockfile_mode=update > /dev/null
+-	bazel run //:requirements_all.update > /dev/null
+-	bazel mod deps --lockfile_mode=update > /dev/null
++	$(BAZEL) mod deps --lockfile_mode=update > /dev/null
++	$(BAZEL) run //:requirements_runtime.update > /dev/null
++	$(BAZEL) mod deps --lockfile_mode=update > /dev/null
++	$(BAZEL) run //:requirements_all.update > /dev/null
++	$(BAZEL) mod deps --lockfile_mode=update > /dev/null
+ 
+ # .venv is PHONY because the dependencies are resolved by bazel
+ .venv:
+ 	@set -e; \
+-	if ! bazel test //:requirements_test > /dev/null; then \
++	if ! $(BAZEL) test //:requirements_test > /dev/null; then \
+ 		if [ "${CI}" == "true" ]; then \
+ 			echo "A locking of python requirements is needed, but we're executed in the CI, where this should not be done."; \
+ 			echo "It seems you forgot to commit the new lock file. Regenerate with: make relock_venv"; \
+@@ -268,7 +269,7 @@ relock_venv:
+ 		fi; \
+ 		# TODO: We currently need to first have an updated runtime lock file as this is the input for the all_lock file. \
+ 		# Therefore execution order matters! \
+-		bazel run //:requirements_runtime.update; bazel mod deps --lockfile_mode=update; \
+-		bazel run //:requirements_all.update; bazel mod deps --lockfile_mode=update; \
++		$(BAZEL) run //:requirements_runtime.update; $(BAZEL) mod deps --lockfile_mode=update; \
++		$(BAZEL) run //:requirements_all.update; $(BAZEL) mod deps --lockfile_mode=update; \
+ 	fi; \
+ 	CC="gcc" $(REPO_PATH)/scripts/run-bazel.sh run //:create_venv
+diff --git a/bazel/registry/modules/aspect_rules_lint/1.0.2/source.json b/bazel/registry/modules/aspect_rules_lint/1.0.2/source.json
+index d3f3532b..b03ae584 100644
+--- a/bazel/registry/modules/aspect_rules_lint/1.0.2/source.json
++++ b/bazel/registry/modules/aspect_rules_lint/1.0.2/source.json
+@@ -1,5 +1,5 @@
+ {
+-    "mirrors": ["https://artifacts.lan.tribe29.com/repository/upstream-archives/"],
++    "mirrors": [],
+     "integrity": "sha256-fV/u+a2F8Lp4zFdXqUePj6mcWKjKvBZg1hCykdwkLps=",
+     "strip_prefix": "rules_lint-1.0.2",
+     "url": "https://github.com/aspect-build/rules_lint/releases/download/v1.0.2/rules_lint-v1.0.2.tar.gz",
+diff --git a/bazel/registry/modules/aspect_rules_py/0.7.4/source.json b/bazel/registry/modules/aspect_rules_py/0.7.4/source.json
+index 1255c861..ad32a66f 100644
+--- a/bazel/registry/modules/aspect_rules_py/0.7.4/source.json
++++ b/bazel/registry/modules/aspect_rules_py/0.7.4/source.json
+@@ -1,5 +1,5 @@
+ {
+-    "mirrors": ["https://artifacts.lan.tribe29.com/repository/upstream-archives/"],
++    "mirrors": [],
+     "integrity": "sha256-BCeM4jzFyRokti6gCsBMVT/kDKOQlDrPZoTTZ6aBqHE=",
+     "strip_prefix": "rules_py-0.7.4",
+     "url": "https://github.com/aspect-build/rules_py/releases/download/v0.7.4/rules_py-v0.7.4.tar.gz",
+diff --git a/bazel/registry/modules/bazel_skylib/1.7.1/source.json b/bazel/registry/modules/bazel_skylib/1.7.1/source.json
+index 140b9d5e..cdd5a2dd 100644
+--- a/bazel/registry/modules/bazel_skylib/1.7.1/source.json
++++ b/bazel/registry/modules/bazel_skylib/1.7.1/source.json
+@@ -1,5 +1,5 @@
+ {
+-    "mirrors": ["https://artifacts.lan.tribe29.com/repository/upstream-archives/"],
++    "mirrors": [],
+     "integrity": "sha256-vCg8381SalLDIBJ5zaS8KYZS76iYsQtNsIN9xRZSdW8=",
+     "strip_prefix": "",
+     "url": "https://github.com/bazelbuild/bazel-skylib/releases/download/1.7.1/bazel-skylib-1.7.1.tar.gz"
+diff --git a/bazel/registry/modules/buildifier_prebuilt/8.0.0/source.json b/bazel/registry/modules/buildifier_prebuilt/8.0.0/source.json
+index b07e4963..81cb0912 100644
+--- a/bazel/registry/modules/buildifier_prebuilt/8.0.0/source.json
++++ b/bazel/registry/modules/buildifier_prebuilt/8.0.0/source.json
+@@ -1,5 +1,5 @@
+ {
+-    "mirrors": ["https://artifacts.lan.tribe29.com/repository/upstream-archives/"],
++    "mirrors": [],
+     "url": "https://github.com/keith/buildifier-prebuilt/archive/refs/tags/8.0.0.tar.gz",
+     "integrity": "sha256-4x/mNqUATrULe0fsMcPOoK/Vl9FLsZkYMqohMDiDfs8=",
+     "strip_prefix": "buildifier-prebuilt-8.0.0",
+diff --git a/bazel/registry/modules/gazelle/0.42.0/source.json b/bazel/registry/modules/gazelle/0.42.0/source.json
+index 592fe527..da7d473e 100644
+--- a/bazel/registry/modules/gazelle/0.42.0/source.json
++++ b/bazel/registry/modules/gazelle/0.42.0/source.json
+@@ -1,5 +1,5 @@
+ {
+-    "mirrors": ["https://artifacts.lan.tribe29.com/repository/upstream-archives/"],
++    "mirrors": [],
+     "integrity": "sha256-XYDmKnAxTznMdkwcPqqADFk2yfHqkWJQBiJ85NIM0IY=",
+     "strip_prefix": "",
+     "url": "https://github.com/bazel-contrib/bazel-gazelle/releases/download/v0.42.0/bazel-gazelle-v0.42.0.tar.gz",
+diff --git a/bazel/registry/modules/protobuf/28.3/source.json b/bazel/registry/modules/protobuf/28.3/source.json
+index 171077c9..85a2c922 100644
+--- a/bazel/registry/modules/protobuf/28.3/source.json
++++ b/bazel/registry/modules/protobuf/28.3/source.json
+@@ -1,5 +1,5 @@
+ {
+-    "mirrors": ["https://artifacts.lan.tribe29.com/repository/upstream-archives/"],
++    "mirrors": [],
+     "integrity": "sha256-s7TDts/nS3eurpkJ/DwTAwknF/cbwhVNfBlhrNr1/kw=",
+     "strip_prefix": "protobuf-28.3",
+     "url": "https://github.com/protocolbuffers/protobuf/releases/download/v28.3/protobuf-28.3.zip"
+diff --git a/bazel/registry/modules/protobuf/29.3/source.json b/bazel/registry/modules/protobuf/29.3/source.json
+index a71a79a1..888263b0 100644
+--- a/bazel/registry/modules/protobuf/29.3/source.json
++++ b/bazel/registry/modules/protobuf/29.3/source.json
+@@ -2,5 +2,5 @@
+     "integrity": "sha256-6bmsGRCxBBBlg5hQYDyvNuKdPT0jDd9SvRN3jdMbkEY=",
+     "strip_prefix": "protobuf-29.3",
+     "url": "https://github.com/protocolbuffers/protobuf/releases/download/v29.3/protobuf-29.3.zip",
+-    "mirrors": ["https://artifacts.lan.tribe29.com/repository/upstream-archives/"]
++    "mirrors": []
+ }
+diff --git a/bazel/registry/modules/rules_cc/0.1.1/source.json b/bazel/registry/modules/rules_cc/0.1.1/source.json
+index 6fa06de4..8ddfa4e3 100644
+--- a/bazel/registry/modules/rules_cc/0.1.1/source.json
++++ b/bazel/registry/modules/rules_cc/0.1.1/source.json
+@@ -1,5 +1,5 @@
+ {
+-    "mirrors": ["https://artifacts.lan.tribe29.com/repository/upstream-archives/"],
++    "mirrors": [],
+     "integrity": "sha256-cS13hosxUt1hjE1k+q3e/MWWX5D13m5t0dXdzQvoLUI=",
+     "strip_prefix": "rules_cc-0.1.1",
+     "url": "https://github.com/bazelbuild/rules_cc/releases/download/0.1.1/rules_cc-0.1.1.tar.gz",
+diff --git a/bazel/registry/modules/rules_foreign_cc/0.11.1/source.json b/bazel/registry/modules/rules_foreign_cc/0.11.1/source.json
+index e950c853..e18874fc 100644
+--- a/bazel/registry/modules/rules_foreign_cc/0.11.1/source.json
++++ b/bazel/registry/modules/rules_foreign_cc/0.11.1/source.json
+@@ -1,5 +1,5 @@
+ {
+-    "mirrors": ["https://artifacts.lan.tribe29.com/repository/upstream-archives/"],
++    "mirrors": [],
+     "integrity": "sha256-SzPWLPEJvMzyhrMO1xIRKcw0z09O2dihHzjZEI9AunQ=",
+     "strip_prefix": "rules_foreign_cc-0.11.1",
+     "url": "https://github.com/bazelbuild/rules_foreign_cc/releases/download/0.11.1/rules_foreign_cc-0.11.1.tar.gz",
+diff --git a/bazel/registry/modules/rules_go/0.50.1/source.json b/bazel/registry/modules/rules_go/0.50.1/source.json
+index f806a8a5..cfed23f8 100644
+--- a/bazel/registry/modules/rules_go/0.50.1/source.json
++++ b/bazel/registry/modules/rules_go/0.50.1/source.json
+@@ -1,5 +1,5 @@
+ {
+-    "mirrors": ["https://artifacts.lan.tribe29.com/repository/upstream-archives/"],
++    "mirrors": [],
+     "integrity": "sha256-9KkxRRjKas+hbMSrQ7C4zh5OpkuBw42KN3KIPxUzRrg=",
+     "strip_prefix": "",
+     "url": "https://github.com/bazelbuild/rules_go/releases/download/v0.50.1/rules_go-v0.50.1.zip"
+diff --git a/bazel/registry/modules/rules_mypy/0.17.0/source.json b/bazel/registry/modules/rules_mypy/0.17.0/source.json
+index 1a349816..2bf51ba2 100644
+--- a/bazel/registry/modules/rules_mypy/0.17.0/source.json
++++ b/bazel/registry/modules/rules_mypy/0.17.0/source.json
+@@ -1,5 +1,5 @@
+ {
+-    "mirrors": ["https://artifacts.lan.tribe29.com/repository/upstream-archives/"],
++    "mirrors": [],
+     "integrity": "sha256-txzN60Q02I6o+qsz0Thxsrcg1SIOEqhTk1xnDa+0/JE=",
+     "strip_prefix": "rules_mypy-0.17.0",
+     "url": "https://github.com/theoremlp/rules_mypy/releases/download/v0.17.0/rules_mypy-0.17.0.tar.gz"
+diff --git a/bazel/registry/modules/rules_proto_grpc/5.0.1/source.json b/bazel/registry/modules/rules_proto_grpc/5.0.1/source.json
+index a7b2be35..c8fc1ea5 100644
+--- a/bazel/registry/modules/rules_proto_grpc/5.0.1/source.json
++++ b/bazel/registry/modules/rules_proto_grpc/5.0.1/source.json
+@@ -1,5 +1,5 @@
+ {
+-    "mirrors": ["https://artifacts.lan.tribe29.com/repository/upstream-archives/"],
++    "mirrors": [],
+     "integrity": "sha256-OKUaMYPf+lMju/B7fVRz+h8GcHz1lgeIjzbLc1qznNg=",
+     "strip_prefix": "rules_proto_grpc-5.0.1",
+     "url": "https://github.com/rules-proto-grpc/rules_proto_grpc/releases/download/5.0.1/rules_proto_grpc-5.0.1.tar.gz",
+diff --git a/bazel/registry/modules/rules_python/0.37.0/source.json b/bazel/registry/modules/rules_python/0.37.0/source.json
+index ac61a9eb..a6a204a0 100644
+--- a/bazel/registry/modules/rules_python/0.37.0/source.json
++++ b/bazel/registry/modules/rules_python/0.37.0/source.json
+@@ -1,5 +1,5 @@
+ {
+-    "mirrors": ["https://artifacts.lan.tribe29.com/repository/upstream-archives/"],
++    "mirrors": [],
+     "integrity": "sha256-DMBd2ydhS67KzgaJhpMeKm6faRFOYRX8XcWCUPr1bg8=",
+     "strip_prefix": "rules_python-0.37.0",
+     "url": "https://github.com/bazelbuild/rules_python/releases/download/0.37.0/rules_python-0.37.0.tar.gz",
+diff --git a/bazel/registry/modules/rules_rust/0.54.1/source.json b/bazel/registry/modules/rules_rust/0.54.1/source.json
+index 21417254..da0c3705 100644
+--- a/bazel/registry/modules/rules_rust/0.54.1/source.json
++++ b/bazel/registry/modules/rules_rust/0.54.1/source.json
+@@ -1,5 +1,5 @@
+ {
+-    "mirrors": ["https://artifacts.lan.tribe29.com/repository/upstream-archives/"],
++    "mirrors": [],
+     "integrity": "sha256-r09Wyq5QqZpov845sUG1Cd1oVIyCBLmKt6HK/JTVuwI=",
+     "strip_prefix": "",
+     "url": "https://github.com/bazelbuild/rules_rust/releases/download/0.54.1/rules_rust-v0.54.1.tar.gz"
+diff --git a/bazel/registry/modules/rules_uv/0.44.0/source.json b/bazel/registry/modules/rules_uv/0.44.0/source.json
+index 87819b64..f22d7ae1 100644
+--- a/bazel/registry/modules/rules_uv/0.44.0/source.json
++++ b/bazel/registry/modules/rules_uv/0.44.0/source.json
+@@ -1,5 +1,5 @@
+ {
+-    "mirrors": ["https://artifacts.lan.tribe29.com/repository/upstream-archives/"],
++    "mirrors": [],
+     "integrity": "sha256-RCT8Y8qtbGMBij/NsxZEvVVb8HlDAsL3WaxAexUDvxA=",
+     "strip_prefix": "rules_uv-0.44.0",
+     "url": "https://github.com/theoremlp/rules_uv/releases/download/v0.44.0/rules_uv-0.44.0.tar.gz"
+diff --git a/bazel_downloader.cfg b/bazel_downloader.cfg
+index 232f92c2..2d07c206 100644
+--- a/bazel_downloader.cfg
++++ b/bazel_downloader.cfg
+@@ -1,10 +1,5 @@
+-rewrite (github.com)/(.*) https://bazel-registry.lan.checkmk.net/$1/$2
+ rewrite (github.com)/(.*) https://$1/$2
+-rewrite (gitlab.arm.com)/(.*) https://bazel-registry.lan.checkmk.net/$1/$2
+ rewrite (gitlab.arm.com)/(.*) https://$1/$2
+-rewrite (files.pythonhosted.org)/(.*) https://bazel-registry.lan.checkmk.net/$1/$2
+ rewrite (files.pythonhosted.org)/(.*) https://$1/$2
+-rewrite (download.gnome.org)/(.*) https://bazel-registry.lan.checkmk.net/$1/$2
+ rewrite (download.gnome.org)/(.*) https://$1/$2
+-rewrite (pkgconfig.freedesktop.org)/(.*) https://bazel-registry.lan.checkmk.net/$1/$2
+ rewrite (pkgconfig.freedesktop.org)/(.*) https://$1/$2
+diff --git a/cmk/BUILD b/cmk/BUILD
+index 1118fd9a..0f5ed888 100644
+--- a/cmk/BUILD
++++ b/cmk/BUILD
+@@ -17,7 +17,7 @@ genrule(
+     srcs = [":requirements_pruned.txt"],
+     outs = ["requirements_protobuf_pinned.txt"],
+     # We go for "compatible release" with `~=`.
+-    cmd = "cat $< <(echo protobuf~=%s) > $@" % PROTOBUF_PYTHON_VERSION,
++    cmd = "cat $< > $@ && echo protobuf~=%s >> $@" % PROTOBUF_PYTHON_VERSION,
+     visibility = ["//:__subpackages__"],
+ )
+ 
+diff --git a/doc/plugin-api/source/conf.py b/doc/plugin-api/source/conf.py
+index c7d29811..a74b21db 100644
+--- a/doc/plugin-api/source/conf.py
++++ b/doc/plugin-api/source/conf.py
+@@ -80,6 +80,9 @@ templates_path = ["_templates"]
+ # directories to ignore when looking for source files.
+ # This pattern also affects html_static_path and html_extra_path.
+ exclude_patterns: list[str] = []
++if os.environ.get("EDITION") == "raw":
++    # The dynamic configuration connector API is only shipped in CEE.
++    exclude_patterns.append("cmk.cee.dcd.plugins.connectors.connectors_api/index.rst")
+ 
+ # Instead of absolute module names like "cmk.gui.plugins.dashboard.dashboard_api.v0.IFrameDashlet",
+ # that fill the whole page, use the plain module local names of the classes.
+diff --git a/omd/Makefile b/omd/Makefile
+index dff0b704..c0ada50e 100644
+--- a/omd/Makefile
++++ b/omd/Makefile
+@@ -181,12 +181,14 @@ $(SKEL_PERMISSIONS): $(INSTALL)
+ 	        OUTPUT="$${OUTPUT}# $$p\n$$(cat $$p/skel.permissions)\n"; \
+ 	    fi ; \
+ 	done ; \
++	if [ -d ../../non-free/packages ]; then \
+ 	cd ../../non-free/packages ; for p in $(PACKAGES) ; do \
+ 	    if [ -d $$p ] && [ -e $$p/skel.permissions ] ; then \
+ 	        OUTPUT="$${OUTPUT}# $$p\n$$(cat $$p/skel.permissions)\n"; \
+ 	    fi ; \
+ 	done ; \
+-	bazel build //omd:skel_permissions_$(EDITION_SHORT) ; \
++	fi ; \
++	/usr/local/bin/bazel build //omd:skel_permissions_$(EDITION_SHORT) ; \
+ 	OUTPUT="$${OUTPUT}# Bazel\n$$(cat $(REPO_PATH)/bazel-bin/omd/skel.permissions_$(EDITION_SHORT))\n" ; \
+ 	echo -e "$$OUTPUT" > $(SKEL_PERMISSIONS)
+ 
+diff --git a/omd/debian/control.in b/omd/debian/control.in
+index 4d6c26df..96724af9 100644
+--- a/omd/debian/control.in
++++ b/omd/debian/control.in
+@@ -1,7 +1,7 @@
+ Source: check-mk-###EDITION###-###PKG_VERSION###
+ Section: admin
+ Priority: optional
+-Maintainer: Checkmk team <feedback@checkmk.com>
++Maintainer: sergiodadi <sergiodadi@nojo.fr>
+ Build-Depends:@debhelper@(>=@7)
+ Standards-Version: 3.8.3
+ Homepage: https://checkmk.com
+diff --git a/omd/debian/triggers b/omd/debian/triggers
+new file mode 100644
+index 00000000..a4f984ea
+--- /dev/null
++++ b/omd/debian/triggers
+@@ -0,0 +1 @@
++interest-noawait /usr/lib/apache2/modules
+diff --git a/omd/packages/Python/BUILD.Python.bazel b/omd/packages/Python/BUILD.Python.bazel
+index e5f8e4b8..ad728e4f 100644
+--- a/omd/packages/Python/BUILD.Python.bazel
++++ b/omd/packages/Python/BUILD.Python.bazel
+@@ -78,7 +78,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+     },
+ 
+@@ -96,7 +96,7 @@ configure_make(
+     postfix_script = """
+         py_install_dir="$$BUILD_TMPDIR/{installPrefix}";
+         bin_dir="$$INSTALLDIR/bin";
+-        sysconfig_path="$$INSTALLDIR/lib/python{pyMajMin}/_sysconfigdata__linux_x86_64-linux-gnu.py"
++        sysconfig_path="$$INSTALLDIR/lib/python{pyMajMin}/_sysconfigdata__linux_aarch64-linux-gnu.py"
+         # omd_prefix must be fixed-up to the corresponding omd path (e.g. /omd/versions/2.2.0p2.cee)
+         omd_prefix="/replace-me"
+ 
+diff --git a/omd/packages/apache-omd/BUILD b/omd/packages/apache-omd/BUILD
+index 63e2eb52..a0886576 100644
+--- a/omd/packages/apache-omd/BUILD
++++ b/omd/packages/apache-omd/BUILD
+@@ -67,6 +67,7 @@ genrule(
+                 echo "ERROR: APACHE_OMD_MODULE_DIR=$$APACHE_OMD_MODULE_DIR is not a directory"
+                 exit -1
+             fi
++            test -f "$$APACHE_OMD_MODULE_DIR/mod_mpm_prefork.so" || exit 1
+             echo "APACHE_OMD_MODULE_DIR=$$APACHE_OMD_MODULE_DIR"
+             # we want symlinks to each of the following modules if available:
+             APACHE_MODULES="\
+diff --git a/omd/packages/crypt-ssleay/cryptssl_http.bzl b/omd/packages/crypt-ssleay/cryptssl_http.bzl
+index 493015c6..cab03369 100644
+--- a/omd/packages/crypt-ssleay/cryptssl_http.bzl
++++ b/omd/packages/crypt-ssleay/cryptssl_http.bzl
+@@ -8,7 +8,6 @@ def crypt_ssleay_workspace():
+         name = "Crypt-SSLeay",
+         urls = [
+             "https://www.cpan.org/modules/by-module/Net/NANIS/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "f5d34f813677829857cf8a0458623db45b4d9c2311daaebe446f9e01afa9ffe8",
+         build_file = "@omd_packages//omd/packages/perl-modules:BUILD.Crypt-SSLeay.bazel",
+diff --git a/omd/packages/erlang/BUILD b/omd/packages/erlang/BUILD
+index 3e2adf40..6a36ab28 100644
+--- a/omd/packages/erlang/BUILD
++++ b/omd/packages/erlang/BUILD
+@@ -56,6 +56,7 @@ configure_make(
+     ],
+     env = {
+         "ORIGIN_VAR": "\\\\$$\\$$ORIGIN",
++        "LIBS": "-lstdc++",
+     },
+     install_prefix = "$INSTALLDIR",
+     lib_source = ":all_srcs",
+diff --git a/omd/packages/freetds/BUILD.freetds.bazel b/omd/packages/freetds/BUILD.freetds.bazel
+index f7205ab3..982eff12 100644
+--- a/omd/packages/freetds/BUILD.freetds.bazel
++++ b/omd/packages/freetds/BUILD.freetds.bazel
+@@ -42,7 +42,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+         #
+         # This is a nasty workaround for Bazel's inability to escape `$ORIGIN`
+diff --git a/omd/packages/freetds/freetds_http.bzl b/omd/packages/freetds/freetds_http.bzl
+index 8428f65d..c993eb6e 100644
+--- a/omd/packages/freetds/freetds_http.bzl
++++ b/omd/packages/freetds/freetds_http.bzl
+@@ -9,7 +9,6 @@ def freetds_workspace():
+         build_file = "@omd_packages//omd/packages/freetds:BUILD.freetds.bazel",
+         urls = [
+             "https://www.freetds.org/files/stable/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "6acb9086350425f5178e544bbe2d54a001097e8e20277a2b766ad0799a2e7d87",
+         strip_prefix = "freetds-" + version_str,
+diff --git a/omd/packages/glib/BUILD b/omd/packages/glib/BUILD
+index e842eb10..22640743 100644
+--- a/omd/packages/glib/BUILD
++++ b/omd/packages/glib/BUILD
+@@ -2,14 +2,14 @@ cc_library(
+     name = "glibconfig",
+     hdrs = select(
+         {
+-            "@//:lsb_filesystem_layout": ["lib/x86_64-linux-gnu/glib-2.0/include/glibconfig.h"],
++            "@//:lsb_filesystem_layout": ["lib/aarch64-linux-gnu/glib-2.0/include/glibconfig.h"],
+             "@//:fhs_filesystem_layout": ["lib64/glib-2.0/include/glibconfig.h"],
+         },
+         no_match_error = "Please build with lsb or fhs filesystem layout",
+     ),
+     includes = select(
+         {
+-            "@//:lsb_filesystem_layout": ["lib/x86_64-linux-gnu/glib-2.0/include"],
++            "@//:lsb_filesystem_layout": ["lib/aarch64-linux-gnu/glib-2.0/include"],
+             "@//:fhs_filesystem_layout": ["lib64/glib-2.0/include"],
+         },
+         no_match_error = "Please build with lsb or fhs filesystem layout",
+@@ -20,7 +20,7 @@ cc_import(
+     name = "libglib",
+     shared_library = select(
+         {
+-            "@//:lsb_filesystem_layout": "lib/x86_64-linux-gnu/libglib-2.0.so",
++            "@//:lsb_filesystem_layout": "lib/aarch64-linux-gnu/libglib-2.0.so",
+             "@//:fhs_filesystem_layout": "lib64/libglib-2.0.so",
+         },
+         no_match_error = "Please build with lsb or fhs filesystem layout",
+diff --git a/omd/packages/heirloom-mailx/heirloom-mailx_http.bzl b/omd/packages/heirloom-mailx/heirloom-mailx_http.bzl
+index d8ab0e4c..7a997c20 100644
+--- a/omd/packages/heirloom-mailx/heirloom-mailx_http.bzl
++++ b/omd/packages/heirloom-mailx/heirloom-mailx_http.bzl
+@@ -8,7 +8,6 @@ def heirloommailx_workspace():
+         name = "heirloom-mailx",
+         urls = [
+             "https://ftp.nl.debian.org/debian-archive/debian/pool/main/h/heirloom-mailx/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "015ba4209135867f37a0245d22235a392b8bbed956913286b887c2e2a9a421ad",
+         build_file = "@omd_packages//omd/packages/heirloom-mailx:BUILD.heirloom-mailx.bazel",
+diff --git a/omd/packages/heirloom-pkgtools/heirloom-pkgtools_http.bzl b/omd/packages/heirloom-pkgtools/heirloom-pkgtools_http.bzl
+index c92d0603..c7a915de 100644
+--- a/omd/packages/heirloom-pkgtools/heirloom-pkgtools_http.bzl
++++ b/omd/packages/heirloom-pkgtools/heirloom-pkgtools_http.bzl
+@@ -26,7 +26,6 @@ def heirloom_pkgtools_workspace():
+         patch_args = ["-p1"],
+         patch_tool = "patch",
+         urls = [
+-            UPSTREAM_MIRROR_URL + filename,
+             "https://sourceforge.net/projects/heirloom/files/heirloom-pkgtools/" + version_str + "/" + filename,
+         ],
+         sha256 = "aa94d33550847d57c62138cabd0f742d4af2f14aa2bfb9e9d4a9427bf498e6cc",
+diff --git a/omd/packages/jaeger/jaeger_http.bzl b/omd/packages/jaeger/jaeger_http.bzl
+index c8a17d9c..352f7753 100644
+--- a/omd/packages/jaeger/jaeger_http.bzl
++++ b/omd/packages/jaeger/jaeger_http.bzl
+@@ -10,7 +10,6 @@ def jaeger_workspace():
+         name = "jaeger",
+         urls = [
+             upstream_url + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "1d810bf04f7e08dac796ad532fc68f1a8fceb0333d2524ae767d88533e69ed75",
+     )
+diff --git a/omd/packages/lcab/BUILD.lcab.bazel b/omd/packages/lcab/BUILD.lcab.bazel
+index c808fc23..b3f22fe5 100644
+--- a/omd/packages/lcab/BUILD.lcab.bazel
++++ b/omd/packages/lcab/BUILD.lcab.bazel
+@@ -15,7 +15,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+         "DESTDIR": "/",
+     },
+diff --git a/omd/packages/lcab/lcab_http.bzl b/omd/packages/lcab/lcab_http.bzl
+index a8660716..18e0205d 100644
+--- a/omd/packages/lcab/lcab_http.bzl
++++ b/omd/packages/lcab/lcab_http.bzl
+@@ -10,7 +10,6 @@ def lcab_workspace():
+         strip_prefix = "lcab-" + version_str,
+         urls = [
+             "http://archlinux.c3sl.ufpr.br/other/lcab/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "065f2c1793b65f28471c0f71b7cf120a7064f28d1c44b07cabf49ec0e97f1fc8",
+     )
+diff --git a/omd/packages/libgsf/BUILD.libgsf.bazel b/omd/packages/libgsf/BUILD.libgsf.bazel
+index 2987eb15..932f542a 100644
+--- a/omd/packages/libgsf/BUILD.libgsf.bazel
++++ b/omd/packages/libgsf/BUILD.libgsf.bazel
+@@ -48,7 +48,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+     },
+     lib_source = ":all_srcs",
+diff --git a/omd/packages/libgsf/libgsf_http.bzl b/omd/packages/libgsf/libgsf_http.bzl
+index e320f1b4..48960f2e 100644
+--- a/omd/packages/libgsf/libgsf_http.bzl
++++ b/omd/packages/libgsf/libgsf_http.bzl
+@@ -10,7 +10,6 @@ def libgsf_workspace():
+         strip_prefix = "libgsf-" + version_str,
+         urls = [
+             "https://ftp.osuosl.org/pub/blfs/conglomeration/libgsf/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "68bede10037164764992970b4cb57cd6add6986a846d04657af9d5fac774ffde",
+     )
+diff --git a/omd/packages/libxml2/BUILD b/omd/packages/libxml2/BUILD
+index 493e5b33..833c4817 100644
+--- a/omd/packages/libxml2/BUILD
++++ b/omd/packages/libxml2/BUILD
+@@ -2,7 +2,7 @@ cc_import(
+     name = "libxml2_shared",
+     shared_library = select(
+         {
+-            "@//:lsb_filesystem_layout": "lib/x86_64-linux-gnu/libxml2.so",
++            "@//:lsb_filesystem_layout": "lib/aarch64-linux-gnu/libxml2.so",
+             "@//:fhs_filesystem_layout": "lib64/libxml2.so",
+         },
+         no_match_error = "Please build with lsb or fhs filesystem layout",
+diff --git a/omd/packages/mod_fcgid/BUILD.mod_fcgid.bazel b/omd/packages/mod_fcgid/BUILD.mod_fcgid.bazel
+index f53919e9..dc2e2a84 100644
+--- a/omd/packages/mod_fcgid/BUILD.mod_fcgid.bazel
++++ b/omd/packages/mod_fcgid/BUILD.mod_fcgid.bazel
+@@ -20,7 +20,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+         "ORIGIN_VAR": "\\\\$$\\$$ORIGIN",
+         "APXS": "$$(which apxs2 || which apxs)",
+diff --git a/omd/packages/mod_fcgid/mod_fcgid_http.bzl b/omd/packages/mod_fcgid/mod_fcgid_http.bzl
+index 14d29ee9..230f5a46 100644
+--- a/omd/packages/mod_fcgid/mod_fcgid_http.bzl
++++ b/omd/packages/mod_fcgid/mod_fcgid_http.bzl
+@@ -10,7 +10,6 @@ def mod_fcgid_workspace():
+         strip_prefix = "mod_fcgid-" + version_str,
+         urls = [
+             "https://downloads.apache.org/httpd/mod_fcgid/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         patches = [
+             "//omd/packages/mod_fcgid/patches:0001-fcgid_proc_unix.c.dif",
+diff --git a/omd/packages/mod_wsgi/BUILD.mod_wsgi.bazel b/omd/packages/mod_wsgi/BUILD.mod_wsgi.bazel
+index bd6933b6..eba7fcae 100644
+--- a/omd/packages/mod_wsgi/BUILD.mod_wsgi.bazel
++++ b/omd/packages/mod_wsgi/BUILD.mod_wsgi.bazel
+@@ -24,7 +24,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+         "ORIGIN_VAR": "\\\\$$\\$$ORIGIN",
+         "CFLAGS": "-I$${EXT_BUILD_DEPS}/python/include/python%s/" % PYTHON_MAJOR_DOT_MINOR,
+diff --git a/omd/packages/mod_wsgi/mod_wsgi_http.bzl b/omd/packages/mod_wsgi/mod_wsgi_http.bzl
+index 2c6bc6b8..de1efca0 100644
+--- a/omd/packages/mod_wsgi/mod_wsgi_http.bzl
++++ b/omd/packages/mod_wsgi/mod_wsgi_http.bzl
+@@ -10,7 +10,6 @@ def mod_wsgi_workspace():
+         strip_prefix = "mod_wsgi-" + version_str,
+         urls = [
+             "http://ftp.debian.org/debian/pool/main/m/mod-wsgi/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         patches = [
+             "//omd/packages/mod_wsgi/patches:0001-wsgi_fixVersionCheck.dif",
+diff --git a/omd/packages/monitoring-plugins/BUILD.monitoring-plugins.bazel b/omd/packages/monitoring-plugins/BUILD.monitoring-plugins.bazel
+index 2e511d47..0b6fb00c 100644
+--- a/omd/packages/monitoring-plugins/BUILD.monitoring-plugins.bazel
++++ b/omd/packages/monitoring-plugins/BUILD.monitoring-plugins.bazel
+@@ -72,7 +72,7 @@ ENV = {
+     "PKG_CONFIG_PATH": ":".join([
+         "/usr/lib/pkgconfig",
+         "/usr/lib64/pkgconfig",
+-        "/usr/lib/x86_64-linux-gnu/pkgconfig",
++        "/usr/lib/aarch64-linux-gnu/pkgconfig",
+     ]),
+     #
+     # This is a nasty workaround for Bazel's inability to escape `$ORIGIN`
+diff --git a/omd/packages/monitoring-plugins/monitoring-plugins_http.bzl b/omd/packages/monitoring-plugins/monitoring-plugins_http.bzl
+index 07a0f009..bb825c45 100644
+--- a/omd/packages/monitoring-plugins/monitoring-plugins_http.bzl
++++ b/omd/packages/monitoring-plugins/monitoring-plugins_http.bzl
+@@ -9,7 +9,6 @@ def monitoring_plugins_workspace():
+         build_file = "@omd_packages//omd/packages/monitoring-plugins:BUILD.monitoring-plugins.bazel",
+         urls = [
+             "https://www.monitoring-plugins.org/download/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "e5dfd4ad8fde0a40da50aab3aff6d9a27020b8f283e332bc4da6ef9914f4028c",
+         strip_prefix = "monitoring-plugins-" + version_str,
+diff --git a/omd/packages/msitools/BUILD.msitools.bazel b/omd/packages/msitools/BUILD.msitools.bazel
+index 1449176a..1bef4bd8 100644
+--- a/omd/packages/msitools/BUILD.msitools.bazel
++++ b/omd/packages/msitools/BUILD.msitools.bazel
+@@ -25,7 +25,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+     } | select(
+         {
+diff --git a/omd/packages/msitools/msitools_http.bzl b/omd/packages/msitools/msitools_http.bzl
+index 11ebe521..06729be6 100644
+--- a/omd/packages/msitools/msitools_http.bzl
++++ b/omd/packages/msitools/msitools_http.bzl
+@@ -18,7 +18,6 @@ def msitools_workspace():
+         patch_tool = "patch",
+         urls = [
+             "http://ftp.gnome.org/pub/GNOME/sources/msitools/" + version_str + "/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "152eb4149cb44f178af93d17bbe0921b5312f30fb4780e5be113b35747b5cd2e",
+     )
+diff --git a/omd/packages/nagios/BUILD.nagios.bazel b/omd/packages/nagios/BUILD.nagios.bazel
+index 637b4fe4..1a99820d 100644
+--- a/omd/packages/nagios/BUILD.nagios.bazel
++++ b/omd/packages/nagios/BUILD.nagios.bazel
+@@ -25,6 +25,7 @@ configure_make(
+     ],
+     configure_in_place = True,
+     configure_options = [
++        "--build=aarch64-unknown-linux-gnu",  # Nagios ships a 2006 config.guess that cannot detect aarch64.
+         "--with-nagios-user=$$(id -un)",
+         "--with-nagios-group=$$(id -gn)",
+         "--with-perlcache",
+@@ -71,7 +72,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+         "ORIGIN_VAR": "\\\\$$\\$$ORIGIN",
+     },
+diff --git a/omd/packages/nagios/nagios_http.bzl b/omd/packages/nagios/nagios_http.bzl
+index 460b8af2..8da86790 100644
+--- a/omd/packages/nagios/nagios_http.bzl
++++ b/omd/packages/nagios/nagios_http.bzl
+@@ -21,7 +21,6 @@ def nagios_workspace():
+         patch_tool = "patch",
+         urls = [
+             "https://assets.nagios.com/downloads/nagioscore/releases/" + filename,
+-            UPSTREAM_MIRROR_URL + "/CMK-29802/" + filename,
+         ],
+         sha256 = "ca9dd68234fa090b3c35ecc8767b2c9eb743977eaf32612fa9b8341cc00a0f99",
+     )
+diff --git a/omd/packages/net-snmp/BUILD.net-snmp.bazel b/omd/packages/net-snmp/BUILD.net-snmp.bazel
+index f13fdab2..013289ae 100644
+--- a/omd/packages/net-snmp/BUILD.net-snmp.bazel
++++ b/omd/packages/net-snmp/BUILD.net-snmp.bazel
+@@ -90,7 +90,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+         "ORIGIN_VAR": "\\\\$$\\$$ORIGIN",
+         "RANLIB": "ranlib",
+@@ -106,7 +106,6 @@ configure_make(
+         "snmpbulkwalk",
+         "snmpdf",
+         "snmpgetnext",
+-        "snmppcap",
+         "snmpps",
+         "snmpstatus",
+         "snmptest",
+@@ -178,7 +177,7 @@ configure_make(
+             make -C perl DESTDIR=$${INSTALLDIR}/ \
+                 INSTALLSITEARCH=/lib/perl5/lib/perl5 \
+                 INSTALLSITEMAN3DIR=/share/man/man3 \
+-                INSTALLARCHLIB=/lib/perl5/lib/perl5/x86_64-linux-gnu-thread-multi \
++                INSTALLARCHLIB=/lib/perl5/lib/perl5/aarch64-linux-gnu-thread-multi \
+                 install
+ 
+         chmod u+w -R $${INSTALLDIR}
+diff --git a/omd/packages/net-snmp/net-snmp_http.bzl b/omd/packages/net-snmp/net-snmp_http.bzl
+index 161e8321..8129c8c8 100644
+--- a/omd/packages/net-snmp/net-snmp_http.bzl
++++ b/omd/packages/net-snmp/net-snmp_http.bzl
+@@ -9,7 +9,6 @@ def netsnmp_workspace():
+         build_file = "@omd_packages//omd/packages/net-snmp:BUILD.net-snmp.bazel",
+         strip_prefix = "net-snmp-" + version_str,
+         urls = [
+-            UPSTREAM_MIRROR_URL + filename,
+             "https://deac-riga.dl.sourceforge.net/project/net-snmp/net-snmp/" + version_str + "/" + filename,
+         ],
+         patches = [
+diff --git a/omd/packages/nrpe/nrpe_http.bzl b/omd/packages/nrpe/nrpe_http.bzl
+index f99d645f..ecbebc4f 100644
+--- a/omd/packages/nrpe/nrpe_http.bzl
++++ b/omd/packages/nrpe/nrpe_http.bzl
+@@ -10,7 +10,6 @@ def nrpe_workspace():
+         strip_prefix = "nrpe-" + version_str,
+         urls = [
+             "https://github.com/NagiosEnterprises/nrpe/releases/download/" + "nrpe-" + version_str + "/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "8ad2d1846ab9011fdd2942b8fc0c99dfad9a97e57f4a3e6e394a4ead99c0f1f0",
+     )
+diff --git a/omd/packages/openssl/BUILD b/omd/packages/openssl/BUILD
+index 02bd8661..db79c1aa 100644
+--- a/omd/packages/openssl/BUILD
++++ b/omd/packages/openssl/BUILD
+@@ -94,7 +94,7 @@ py_binary(
+     out = "lib/libcrypto.so.3." + edition,
+     intermediate_out = "lib/libcrypto.so.3.replaced",
+     new_value = "/omd/versions/{version}.%s/" % edition,
+-    reg_ex = "/home/.*?/openssl.build_tmpdir/openssl/",
++    reg_ex = "/(?:home|usr/local/src)/.*?/openssl.build_tmpdir/openssl/",
+     tool = ":binreplace_binary",
+     value = "//:cmk_version",
+ ) for edition in [
+diff --git a/omd/packages/openssl/openssl_http.bzl b/omd/packages/openssl/openssl_http.bzl
+index 92e871f6..c5b1a7e4 100644
+--- a/omd/packages/openssl/openssl_http.bzl
++++ b/omd/packages/openssl/openssl_http.bzl
+@@ -8,7 +8,6 @@ def openssl_workspace():
+         name = "openssl",
+         urls = [
+             "https://github.com/openssl/openssl/releases/download/openssl-" + version_str + "/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "617e29af8e421f46649484a4937e48c685e47f46488167c982f88bc4ec1d522f",
+         build_file = "@omd_packages//omd/packages/openssl:BUILD.openssl.bazel",
+diff --git a/omd/packages/packages.make b/omd/packages/packages.make
+index c4333c40..e4b583c6 100644
+--- a/omd/packages/packages.make
++++ b/omd/packages/packages.make
+@@ -41,7 +41,7 @@ $(DEPS_INSTALL_BAZEL):
+ 	#TODO: The following code should be executed by Bazel instead of make
+ 	# Fix sysconfigdata
+ 	$(SED) -i "s|/replace-me|$(OMD_ROOT)|g" \
+-	    $(DESTDIR)/$(OMD_ROOT)/lib/python$(PYTHON_MAJOR_DOT_MINOR)/_sysconfigdata__linux_x86_64-linux-gnu.py
++	    $(DESTDIR)/$(OMD_ROOT)/lib/python$(PYTHON_MAJOR_DOT_MINOR)/_sysconfigdata__linux_aarch64-linux-gnu.py
+ 
+ 	# pre-compile pyc files enforcing `checked-hash` invalidation
+ 	# note: this is a workaround and should be handled in according Bazel project
+diff --git a/omd/packages/perl-modules/perl-modules_http.bzl b/omd/packages/perl-modules/perl-modules_http.bzl
+index bf620d0f..02c5ded7 100644
+--- a/omd/packages/perl-modules/perl-modules_http.bzl
++++ b/omd/packages/perl-modules/perl-modules_http.bzl
+@@ -353,7 +353,6 @@ def perl_modules():
+             name = module,
+             urls = [
+                 PERL_MODULES_LIST.get(module).get("url"),
+-                UPSTREAM_MIRROR_URL + module,
+             ],
+             sha256 = PERL_MODULES_LIST.get(module).get("sha256"),
+         )
+diff --git a/omd/packages/pnp4nagios/BUILD.pnp4nagios.bazel b/omd/packages/pnp4nagios/BUILD.pnp4nagios.bazel
+index bc42dc6d..936ac706 100644
+--- a/omd/packages/pnp4nagios/BUILD.pnp4nagios.bazel
++++ b/omd/packages/pnp4nagios/BUILD.pnp4nagios.bazel
+@@ -16,6 +16,7 @@ configure_make(
+     args = ["-j4"],
+     configure_in_place = True,
+     configure_options = [
++        "--build=aarch64-unknown-linux-gnu",  # Legacy config.guess does not recognize aarch64.
+         "-v",
+         "--sysconfdir=$$INSTALLDIR/etc/pnp4nagios",
+         "--libexecdir=$$INSTALLDIR/lib/pnp4nagios",
+@@ -37,7 +38,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+     },
+     lib_source = ":all_srcs",
+diff --git a/omd/packages/pnp4nagios/pnp4nagios_http.bzl b/omd/packages/pnp4nagios/pnp4nagios_http.bzl
+index 88e9ef0c..57df279d 100644
+--- a/omd/packages/pnp4nagios/pnp4nagios_http.bzl
++++ b/omd/packages/pnp4nagios/pnp4nagios_http.bzl
+@@ -9,7 +9,6 @@ def pnp4nagios_workspace():
+         build_file = "@omd_packages//omd/packages/pnp4nagios:BUILD.pnp4nagios.bazel",
+         strip_prefix = "pnp4nagios-" + version_str,
+         urls = [
+-            UPSTREAM_MIRROR_URL + filename,
+             "https://sourceforge.net/projects/pnp4nagios/files/PNP-0.6/" + filename,
+         ],
+         sha256 = "ab59a8a02d0f70de3cf89b12fe1e9216e4b1127bc29c04a036cd06dde72ee8fb",
+diff --git a/omd/packages/python3-modules/BUILD b/omd/packages/python3-modules/BUILD
+index d3a3dc83..4d45538f 100644
+--- a/omd/packages/python3-modules/BUILD
++++ b/omd/packages/python3-modules/BUILD
+@@ -1,6 +1,6 @@
+ load("@omd_packages//omd/packages/Python:version.bzl", "PYTHON_MAJOR_DOT_MINOR")
+ load("@python_modules//:requirements.bzl", "all_requirements")
+-load(":build-python3-modules.bzl", "build_cmd", "build_python_module", "create_requirements_file", "get_pip_options")
++load(":build-python3-modules.bzl", "build_cmd", "build_python_module", "create_requirements_file", "get_pip_options", "get_build_cmd")
+ 
+ config_setting(
+     name = "git_ssl_no_verify",
+@@ -28,14 +28,14 @@ config_setting(
+         "compiled_%s.tar" % module,
+     ],
+     cmd = select({
+-        "//conditions:default": build_cmd.format(
++        "//conditions:default": get_build_cmd(module).format(
+             git_ssl_no_verify = "",
+             module_name = module,
+             pip_add_opts = get_pip_options(module),
+             pyMajMin = PYTHON_MAJOR_DOT_MINOR,
+             requirements = "-r $$HOME/$(execpath %s_requirements.txt)" % module,
+         ),
+-        ":git_ssl_no_verify": build_cmd.format(
++        ":git_ssl_no_verify": get_build_cmd(module).format(
+             git_ssl_no_verify = "GIT_SSL_NO_VERIFY=true",
+             module_name = module,
+             pip_add_opts = get_pip_options(module),
+diff --git a/omd/packages/python3-modules/build-python3-modules.bzl b/omd/packages/python3-modules/build-python3-modules.bzl
+index 890c0523..94b4aad1 100644
+--- a/omd/packages/python3-modules/build-python3-modules.bzl
++++ b/omd/packages/python3-modules/build-python3-modules.bzl
+@@ -114,3 +114,13 @@ build_cmd = """
+ 
+     tar cf $@ $$MODULE_NAME
+ """
++
++
++def get_build_cmd(module_name):
++    # Older fido2 metadata needs the Poetry backend used when it was released.
++    if module_name != "fido2":
++        return build_cmd
++    return build_cmd.replace(
++        "export PIP_CONSTRAINT=\"$$TMPDIR/constraints.txt\"",
++        "cp $$TMPDIR/constraints.txt $$HOME/fido2-build-constraints.txt\n    echo \"poetry-core==1.9.1\" >> $$HOME/fido2-build-constraints.txt\n    export PIP_CONSTRAINT=\"$$HOME/fido2-build-constraints.txt\"",
++    )
+diff --git a/omd/packages/rabbitmq/rabbitmq_http.bzl b/omd/packages/rabbitmq/rabbitmq_http.bzl
+index b7ff89f9..776d5756 100644
+--- a/omd/packages/rabbitmq/rabbitmq_http.bzl
++++ b/omd/packages/rabbitmq/rabbitmq_http.bzl
+@@ -9,7 +9,6 @@ def rabbitmq_workspace():
+         build_file = "@omd_packages//omd/packages/rabbitmq:BUILD",
+         urls = [
+             "https://github.com/rabbitmq/rabbitmq-server/releases/download/v" + version_str + "/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "7bfc742e3d227e8a2b1ea2a0b5ef3ba4b6a7987d5e220e0fbf0919d29b6ed43c",
+         strip_prefix = "rabbitmq_server-" + version_str,
+diff --git a/omd/packages/re2/re2_http.bzl b/omd/packages/re2/re2_http.bzl
+index 11f6ace0..4f55f9bc 100644
+--- a/omd/packages/re2/re2_http.bzl
++++ b/omd/packages/re2/re2_http.bzl
+@@ -11,7 +11,6 @@ def re2_workspace():
+             # TODO: "releases/download/" + version_str + "/" + filename introduced with 2023-06-02 release and later
+             # "https://github.com/google/re2/releases/download/" + version_str + "/" + filename,
+             "https://github.com/google/re2/archive/refs/tags/" + version_str + ".tar.gz",
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "665b65b6668156db2b46dddd33405cd422bd611352c5052ab3dae6a5fbac5506",
+         strip_prefix = "re2-" + version_str,
+diff --git a/omd/packages/redis/redis_http.bzl b/omd/packages/redis/redis_http.bzl
+index f6f7dd06..ccf62ba3 100644
+--- a/omd/packages/redis/redis_http.bzl
++++ b/omd/packages/redis/redis_http.bzl
+@@ -8,7 +8,6 @@ def redis_workspace():
+         name = "redis",
+         urls = [
+             "https://download.redis.io/releases/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "686321b1a03bb8f0ad7114e29516a31273e200ec69aa9bf457de3c2be3f2184f",
+         build_file = "@omd_packages//omd/packages/redis:BUILD.redis.bazel",
+diff --git a/omd/packages/rrdtool/BUILD.rrdtool.bazel b/omd/packages/rrdtool/BUILD.rrdtool.bazel
+index e8396904..103599cd 100644
+--- a/omd/packages/rrdtool/BUILD.rrdtool.bazel
++++ b/omd/packages/rrdtool/BUILD.rrdtool.bazel
+@@ -49,7 +49,7 @@ configure_make(
+             "-I/usr/include/uuid",
+             "-I/usr/lib64/glib-2.0",
+             "-I/usr/lib64/glib-2.0/include",
+-            "-I/usr/lib/x86_64-linux-gnu/glib-2.0/include",
++            "-I/usr/lib/aarch64-linux-gnu/glib-2.0/include",
+         ]) + "'",
+     ],
+     copts = [
+diff --git a/omd/packages/rrdtool/rrdtool_http.bzl b/omd/packages/rrdtool/rrdtool_http.bzl
+index 83c43b5b..90f96af3 100644
+--- a/omd/packages/rrdtool/rrdtool_http.bzl
++++ b/omd/packages/rrdtool/rrdtool_http.bzl
+@@ -10,7 +10,6 @@ def rrdtool_workspace():
+         strip_prefix = "rrdtool-" + version_str,
+         urls = [
+             "https://github.com/oetiker/rrdtool-1.x/releases/download/v" + version_str + "/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         patches = [
+             "//omd/packages/rrdtool/patches:0001-xff_field_missing_from_rrdinfo.dif",
+diff --git a/omd/packages/snap7/snap7_http.bzl b/omd/packages/snap7/snap7_http.bzl
+index 286fbc1f..cfa54a6e 100644
+--- a/omd/packages/snap7/snap7_http.bzl
++++ b/omd/packages/snap7/snap7_http.bzl
+@@ -10,7 +10,6 @@ def snap7_workspace():
+             # since version 1.4.2 only 7z will be released. To get a tar.gz
+             # use the snap7 repackage target
+             # "https://sourceforge.net/projects/snap7/files/" + version_str + "snap7-full-" + version_str + ".7z",
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "fe137737b432d95553ebe5d5f956f0574c6a80c0aeab7a5262fb36b535df3cf4",
+         build_file = "@omd_packages//omd/packages/snap7:BUILD.snap7.bazel",
+diff --git a/omd/packages/stunnel/BUILD.stunnel.bazel b/omd/packages/stunnel/BUILD.stunnel.bazel
+index 144106a9..6b2945c0 100644
+--- a/omd/packages/stunnel/BUILD.stunnel.bazel
++++ b/omd/packages/stunnel/BUILD.stunnel.bazel
+@@ -61,7 +61,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+         "ORIGIN_VAR": "\\\\$$\\$$ORIGIN",
+     },
+diff --git a/omd/packages/stunnel/stunnel_http.bzl b/omd/packages/stunnel/stunnel_http.bzl
+index 0b408038..f4ea3c95 100644
+--- a/omd/packages/stunnel/stunnel_http.bzl
++++ b/omd/packages/stunnel/stunnel_http.bzl
+@@ -16,7 +16,6 @@ def stunnel_workspace():
+         patch_tool = "patch",
+         urls = [
+             "https://ftp.nluug.nl/pub/networking/stunnel/archive/5.x/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "8727e53bb8b7528f850327a2a149158422c02183bc120d1d733cc65b1e2c349d",
+     )
+diff --git a/omd/packages/xinetd/BUILD.xinetd.bazel b/omd/packages/xinetd/BUILD.xinetd.bazel
+index 25b32cd3..6edbc4ff 100644
+--- a/omd/packages/xinetd/BUILD.xinetd.bazel
++++ b/omd/packages/xinetd/BUILD.xinetd.bazel
+@@ -23,7 +23,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+         "ORIGIN_VAR": "\\\\$$\\$$ORIGIN",
+     },
+diff --git a/omd/packages/xinetd/xinetd_http.bzl b/omd/packages/xinetd/xinetd_http.bzl
+index 24b22882..2f37b0b2 100644
+--- a/omd/packages/xinetd/xinetd_http.bzl
++++ b/omd/packages/xinetd/xinetd_http.bzl
+@@ -10,7 +10,6 @@ def xinetd_workspace():
+         strip_prefix = "xinetd-" + version_str,
+         urls = [
+             "https://github.com/openSUSE/xinetd/releases/download/" + version_str + "/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "2baa581010bc70361abdfa37f121e92aeb9c5ce67f9a71913cebd69359cc9654",
+     )
+diff --git a/omd/packages/xmlsec1/BUILD.xmlsec1.bazel b/omd/packages/xmlsec1/BUILD.xmlsec1.bazel
+index ef0f406a..d038b4b4 100644
+--- a/omd/packages/xmlsec1/BUILD.xmlsec1.bazel
++++ b/omd/packages/xmlsec1/BUILD.xmlsec1.bazel
+@@ -42,7 +42,7 @@ configure_make(
+         "PKG_CONFIG_PATH": ":".join([
+             "/usr/lib/pkgconfig",
+             "/usr/lib64/pkgconfig",
+-            "/usr/lib/x86_64-linux-gnu/pkgconfig",
++            "/usr/lib/aarch64-linux-gnu/pkgconfig",
+         ]),
+         "ORIGIN_VAR": "\\\\$$\\$$ORIGIN",
+     },
+diff --git a/omd/packages/xmlsec1/xmlsec1_http.bzl b/omd/packages/xmlsec1/xmlsec1_http.bzl
+index 9587551a..a3b93421 100644
+--- a/omd/packages/xmlsec1/xmlsec1_http.bzl
++++ b/omd/packages/xmlsec1/xmlsec1_http.bzl
+@@ -8,7 +8,6 @@ def xmlsec_workspace():
+         name = "xmlsec1",
+         urls = [
+             "https://github.com/lsh123/xmlsec/releases/download/" + version_str + "/" + filename,
+-            UPSTREAM_MIRROR_URL + filename,
+         ],
+         sha256 = "d0180916ae71be28415a6fa919a0684433ec9ec3ba1cc0866910b02e5e13f5bd",
+         build_file = "@omd_packages//omd/packages/xmlsec1:BUILD.xmlsec1.bazel",
+diff --git a/omd/run-binreplace b/omd/run-binreplace
+index 0e35641d..59392972 100755
+--- a/omd/run-binreplace
++++ b/omd/run-binreplace
+@@ -8,7 +8,7 @@ set -e
+ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ VENV_DIR="$SCRIPT_DIR/.venv"
+ 
+-bazel run //omd:venv
++/usr/local/bin/bazel run //omd:venv
+ 
+ # shellcheck source=/dev/null
+ source "$VENV_DIR"/bin/activate
+diff --git a/omd/strip_binaries b/omd/strip_binaries
+index 919e8304..82faee91 100755
+--- a/omd/strip_binaries
++++ b/omd/strip_binaries
+@@ -19,6 +19,7 @@ option to exclude some files from stripping.
+ """
+ 
+ import argparse
++import platform
+ import stat
+ import struct
+ import subprocess
+@@ -90,6 +91,11 @@ def is_so_or_exec_elf_file(file: Path) -> bool:
+     else:
+         return False
+ 
++    # Preserve foreign architecture vendor binaries on ARM64.
++    machine = struct.unpack_from(short_format, head, 0x12)[0]
++    if platform.machine() == "aarch64" and machine != 183:
++        return False
++
+     elf_type = struct.unpack_from(short_format, head, 0x10)[0]
+     vers = struct.unpack_from(long_format, head, 0x14)[0]
+     if vers != ELF_VERSION:
+diff --git a/packages/livestatus/BUILD b/packages/livestatus/BUILD
+index 73d5ccc9..c348643b 100644
+--- a/packages/livestatus/BUILD
++++ b/packages/livestatus/BUILD
+@@ -13,7 +13,7 @@ cc_library(
+         "include/livestatus/POSIXUtils.h",
+         "include/livestatus/Poller.h",
+     ],
+-    copts = ["-O3"],
++    copts = ["-O3", "-std=c++20"],
+     strip_include_prefix = "include/",
+     visibility = ["//visibility:public"],
+ )
+@@ -35,7 +35,7 @@ cc_library(
+             "src/POSIXUtils.cc",
+         ],
+     ),
+-    copts = ["-O3"],
++    copts = ["-O3", "-std=c++20"],
+     local_defines = [
+         "HAVE_RE2",
+         "ASIO_DISABLE_CONCEPTS",
+diff --git a/packages/neb/BUILD b/packages/neb/BUILD
+index 6dcc8551..bd5978e6 100644
+--- a/packages/neb/BUILD
++++ b/packages/neb/BUILD
+@@ -61,7 +61,7 @@ cc_library(
+         "include/neb/TimeperiodsCache.h",
+         "include/neb/nagios.h",
+     ],
+-    copts = ["-O3"],
++    copts = ["-O3", "-std=c++20"],
+     strip_include_prefix = "include/",
+     deps = [
+         ":neb_nagios_headers",
+diff --git a/packages/unixcat/BUILD b/packages/unixcat/BUILD
+index 9c37010a..5b6cf847 100644
+--- a/packages/unixcat/BUILD
++++ b/packages/unixcat/BUILD
+@@ -3,7 +3,7 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
+ cc_binary(
+     name = "unixcat",
+     srcs = ["src/unixcat.cc"],
+-    copts = ["-O3"],
++    copts = ["-O3", "-std=c++20"],
+     linkopts = [
+         "-pthread",
+     ],
+diff --git a/scripts/run-bazel.sh b/scripts/run-bazel.sh
+index 222c83ff..7d6f96e9 100755
+--- a/scripts/run-bazel.sh
++++ b/scripts/run-bazel.sh
+@@ -15,6 +15,9 @@
+ 
+ set -e
+ 
++# Debian packaging resets PATH; Bazelisk is installed in the dedicated chroot.
++export PATH="/usr/local/bin:/root/.cargo/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin"
++
+ ROOT_DIR="$(dirname "$(dirname "$(realpath "$0")")")"
+ 
+ if ! command -v bazel &>/dev/null; then
+@@ -39,10 +42,10 @@ BUILD_ENVIRONMENT="$(
+     python3 \
+         "${ROOT_DIR}"/scripts/create_build_environment_variables.py \
+         "eval:os-release-name:cat /etc/os-release | grep PRETTY | cut -d '\"' -f2" \
+-        "pathhash:/usr/lib/x86_64-linux-gnu/libc.so" \
+-        "pathhash:/lib64/libc.so.6" \
++        "pathhash:/usr/lib/aarch64-linux-gnu/libc.so" \
++        "pathhash:/lib/aarch64-linux-gnu/libc.so.6" \
+         "pathhash:/usr/lib64/libc.so" \
+-        "pathhash:/opt/gcc-14.2.0"
++        "pathhash:/usr/bin/gcc"
+ )"
+ 
+ eval "${BUILD_ENVIRONMENT}"
+diff --git a/scripts/run-uvenv b/scripts/run-uvenv
+index 3f56f142..08b09a0d 100755
+--- a/scripts/run-uvenv
++++ b/scripts/run-uvenv
+@@ -17,8 +17,15 @@ if [ "$CI" == "true" ]; then
+ fi
+ 
+ # Avoid a loop when building the virtual environment itself.
+-if [ -z "$SKIP_MAKEFILE_CALL" ]; then
+-    make --silent -C "$REPO_PATH" .venv 1>&2
++if [ -z "$SKIP_MAKEFILE_CALL" ] && [ ! -f "$REPO_PATH/.venv/bin/activate" ]; then
++    # Parallel make targets may invoke run-uvenv simultaneously. Serialize the
++    # first virtual-environment creation and recheck after acquiring the lock.
++    (
++        flock -x 9
++        if [ ! -f "$REPO_PATH/.venv/bin/activate" ]; then
++            make --silent -C "$REPO_PATH" .venv 1>&2
++        fi
++    ) 9>"$REPO_PATH/.venv-build.lock"
+ fi
+ 
+ # shellcheck source=/dev/null
