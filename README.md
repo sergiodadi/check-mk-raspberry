@@ -23,12 +23,13 @@ GitHub marks only one release as *Latest*; use this table to find the latest pac
 | **2.5.0p15** | Community | Debian 13 / Raspberry Pi OS **trixie**, **arm64** | `check-mk-community-2.5.0p15_0.trixie_arm64.deb` |
 | **2.5.0p15** | Community | Ubuntu **24.04 noble**, **arm64** | `check-mk-community-2.5.0p15_0.noble_arm64.deb` |
 | **2.5.0p15** | Community | Ubuntu **26.04 resolute**, **arm64** | `check-mk-community-2.5.0p15_0.resolute_arm64.deb` |
+| **2.4.0p37** | Raw | Debian 13 / Raspberry Pi OS **trixie**, **arm64** | `check-mk-raw-2.4.0p37_0.trixie_arm64.deb` |
 | **2.4.0p37** | Raw | Debian 12 / Raspberry Pi OS **bookworm**, **arm64** | `check-mk-raw-2.4.0p37_0.bookworm_arm64.deb` |
 | **2.3.0p50** | Raw | Debian 12 / Raspberry Pi OS **bookworm**, **arm64** | `check-mk-raw-2.3.0p50_0.bookworm_arm64.deb` |
 
 Download them from the [Releases](https://github.com/sergiodadi/check-mk-raspberry/releases) page.
 
-All packages are tested on a **Raspberry Pi 5 Model B (8 GB)** or a **Raspberry Pi 4** running Debian 12 bookworm (Debian 13 trixie for the trixie package; the Ubuntu packages in a clean Ubuntu 24.04 or 26.04 system on the same Pi).
+All packages are tested on a **Raspberry Pi 5 Model B (8 GB)** or a **Raspberry Pi 4** running Debian 12 bookworm (Debian 13 trixie for the trixie packages; the Ubuntu packages in a clean Ubuntu 24.04 or 26.04 system on the same Pi).
 Several versions can be installed side by side (OMD keeps one directory per version).
 
 ## Installation
@@ -68,6 +69,7 @@ All steps, requirements, options and tests are explained in **[BUILD.md](BUILD.m
 
 | Date | Version | Target |
 |---|---|---|
+| 2026-10 | [2.4.0p37-trixie](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.4.0p37-trixie) (Raw) | trixie arm64 |
 | 2026-10 | [2.5.0p16-resolute](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p16-resolute) (Community) | Ubuntu 26.04 resolute arm64 |
 | 2026-10 | [2.5.0p16-trixie](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p16-trixie) (Community) | trixie arm64 |
 | 2026-10 | [2.5.0p15-resolute](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p15-resolute) (Community) | Ubuntu 26.04 resolute arm64 |
