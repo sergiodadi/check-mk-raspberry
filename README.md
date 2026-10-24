@@ -6,12 +6,21 @@ Checkmk does not publish ARM packages. This repository provides `.deb` packages 
 
 ## Latest packages
 
-| Family | Latest release | Package |
-|---|---|---|
-| **Debian** (Raspberry Pi OS) | [2.5.0p17 — Debian 13 trixie](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p17-trixie) | `check-mk-community-2.5.0p17_0.trixie_arm64.deb` |
-| **Ubuntu** | [2.5.0p17 — Ubuntu 26.04 resolute](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p17-resolute) | `check-mk-community-2.5.0p17_0.resolute_arm64.deb` |
+### Debian (Raspberry Pi OS)
 
-GitHub marks only one release as *Latest*; use this table to find the latest package for your distribution.
+| Debian | Latest release | Package |
+|---|---|---|
+| **13 trixie** | [2.5.0p17](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p17-trixie) | `check-mk-community-2.5.0p17_0.trixie_arm64.deb` |
+| **12 bookworm** | [2.5.0p17](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p17-bookworm) | `check-mk-community-2.5.0p17_0.bookworm_arm64.deb` |
+
+### Ubuntu
+
+| Ubuntu | Latest release | Package |
+|---|---|---|
+| **26.04 resolute** | [2.5.0p17](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p17-resolute) | `check-mk-community-2.5.0p17_0.resolute_arm64.deb` |
+| **24.04 noble** | [2.5.0p17](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p17-noble) | `check-mk-community-2.5.0p17_0.noble_arm64.deb` |
+
+GitHub marks only one release as *Latest*; use these tables to find the latest package for your distribution.
 
 ## Available packages
 
