@@ -18,7 +18,7 @@ Checkmk does not publish ARM packages. This repository provides `.deb` packages 
 | Ubuntu | Latest release | Package |
 |---|---|---|
 | **26.04 resolute** | [2.5.0p17](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p17-resolute) | `check-mk-community-2.5.0p17_0.resolute_arm64.deb` |
-| **24.04 noble** | [2.5.0p17](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p17-noble) | `check-mk-community-2.5.0p17_0.noble_arm64.deb` |
+| **24.04 noble** | [2.5.0p19](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p19-noble) | `check-mk-community-2.5.0p19_0.noble_arm64.deb` |
 
 GitHub marks only one release as *Latest*; use these tables to find the latest package for your distribution.
 
@@ -28,6 +28,7 @@ GitHub marks only one release as *Latest*; use these tables to find the latest p
 |---|---|---|---|
 | **2.5.0p19** | Community | Debian 12 / Raspberry Pi OS **bookworm**, **arm64** | `check-mk-community-2.5.0p19_0.bookworm_arm64.deb` |
 | **2.5.0p19** | Community | Debian 13 / Raspberry Pi OS **trixie**, **arm64** | `check-mk-community-2.5.0p19_0.trixie_arm64.deb` |
+| **2.5.0p19** | Community | Ubuntu **24.04 noble**, **arm64** | `check-mk-community-2.5.0p19_0.noble_arm64.deb` |
 | **2.5.0p18** | Community | Debian 12 / Raspberry Pi OS **bookworm**, **arm64** | `check-mk-community-2.5.0p18_0.bookworm_arm64.deb` |
 | **2.5.0p17** | Community | Debian 13 / Raspberry Pi OS **trixie**, **arm64** | `check-mk-community-2.5.0p17_0.trixie_arm64.deb` |
 | **2.5.0p17** | Community | Ubuntu **26.04 resolute**, **arm64** | `check-mk-community-2.5.0p17_0.resolute_arm64.deb` |
@@ -89,6 +90,7 @@ To build **Checkmk 2.4 Raw** for Debian 13 trixie, use `build/build-checkmk-2.4.
 
 | Date | Version | Target |
 |---|---|---|
+| 2026-11 | [2.5.0p19-noble](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p19-noble) (Community) | Ubuntu 24.04 noble arm64 |
 | 2026-11 | [2.5.0p19-trixie](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p19-trixie) (Community) | trixie arm64 |
 | 2026-11 | [2.5.0p19-bookworm](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p19-bookworm) (Community) | bookworm arm64 |
 | 2026-11 | [2.5.0p18-bookworm](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p18-bookworm) (Community) | bookworm arm64 |
