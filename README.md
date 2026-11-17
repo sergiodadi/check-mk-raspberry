@@ -10,7 +10,7 @@ Checkmk does not publish ARM packages. This repository provides `.deb` packages 
 
 | Debian | Latest release | Package |
 |---|---|---|
-| **13 trixie** | [2.5.0p19](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p19-trixie) | `check-mk-community-2.5.0p19_0.trixie_arm64.deb` |
+| **13 trixie** | [2.5.0p20](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p20-trixie) | `check-mk-community-2.5.0p20_0.trixie_arm64.deb` |
 | **12 bookworm** | [2.5.0p20](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p20-bookworm) | `check-mk-community-2.5.0p20_0.bookworm_arm64.deb` |
 
 ### Ubuntu
@@ -27,6 +27,7 @@ GitHub marks only one release as *Latest*; use these tables to find the latest p
 | Checkmk | Edition | Target | Package |
 |---|---|---|---|
 | **2.5.0p20** | Community | Debian 12 / Raspberry Pi OS **bookworm**, **arm64** | `check-mk-community-2.5.0p20_0.bookworm_arm64.deb` |
+| **2.5.0p20** | Community | Debian 13 / Raspberry Pi OS **trixie**, **arm64** | `check-mk-community-2.5.0p20_0.trixie_arm64.deb` |
 | **2.5.0p19** | Community | Debian 12 / Raspberry Pi OS **bookworm**, **arm64** | `check-mk-community-2.5.0p19_0.bookworm_arm64.deb` |
 | **2.5.0p19** | Community | Debian 13 / Raspberry Pi OS **trixie**, **arm64** | `check-mk-community-2.5.0p19_0.trixie_arm64.deb` |
 | **2.5.0p19** | Community | Ubuntu **24.04 noble**, **arm64** | `check-mk-community-2.5.0p19_0.noble_arm64.deb` |
@@ -76,7 +77,7 @@ other arm64 machine, a single command builds the package for Debian 12, Debian 1
 ```
 sudo apt install mmdebstrap git curl
 git clone https://github.com/sergiodadi/check-mk-raspberry.git && cd check-mk-raspberry
-sudo ./build/build-checkmk.sh 2.5.0p19 trixie /srv/checkmk-build
+sudo ./build/build-checkmk.sh 2.5.0p20 trixie /srv/checkmk-build
 ```
 
 All steps, requirements, options and tests are explained in **[BUILD.md](BUILD.md)**.
@@ -92,6 +93,7 @@ To build **Checkmk 2.4 Raw** for Debian 13 trixie, use `build/build-checkmk-2.4.
 
 | Date | Version | Target |
 |---|---|---|
+| 2026-11 | [2.5.0p20-trixie](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p20-trixie) (Community) | trixie arm64 |
 | 2026-11 | [2.5.0p20-bookworm](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p20-bookworm) (Community) | bookworm arm64 |
 | 2026-11 | [2.5.0p19-resolute](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p19-resolute) (Community) | Ubuntu 26.04 resolute arm64 |
 | 2026-11 | [2.5.0p19-noble](https://github.com/sergiodadi/check-mk-raspberry/releases/tag/2.5.0p19-noble) (Community) | Ubuntu 24.04 noble arm64 |
